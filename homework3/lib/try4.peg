@@ -1,0 +1,14 @@
+start = wordlist
+
+wordlist = first:word rest:spaceWord* {
+  var arr = [first];
+  return arr.concat(rest);
+}
+
+spaceWord = ' ' w:word {
+  return w;
+}
+
+word = letters:[a-z]+ {
+  return letters.join('');
+}

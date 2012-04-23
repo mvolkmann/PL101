@@ -1,0 +1,11 @@
+start = word
+    
+word = lower / upper
+        
+lower = letters:[a-z]+ {
+  return letters.join('');
+}
+                
+upper = letters:[A-Z]+ {
+  return letters.join('');
+}

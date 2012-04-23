@@ -1,0 +1,16 @@
+start = expr
+
+expr = atom /
+  '(' first:expr rest:spaceExpr* ')' {
+    return [first].concat(rest);
+  }
+
+spaceExpr = ' ' exp:expr {
+  return exp;
+}
+
+atom = chars:validChar+ {
+  return chars.join('');
+}
+
+validChar = [0-9a-zA-Z_?!+-=@#$%^&*/.]

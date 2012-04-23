@@ -1,0 +1,33 @@
+start = comma
+
+comma =
+  left:add ',' right:comma {
+    return {tag: ',', left:left, right:right};
+  }
+  /
+  add
+
+add =
+  left:multiply '+' right:add {
+    return {tag: '+', left:left, right:right};
+  }
+  /
+  multiply
+
+multiply =
+  left:primary '*' right:multiply {
+    return {tag: '*', left:left, right:right};
+  }
+  /
+  primary
+
+primary =
+  integer
+  /
+  '(' add:add ')' {
+    return add;
+  }
+
+integer = digits:[0-9]+ {
+  return parseInt(digits.join(''), 10);
+}
