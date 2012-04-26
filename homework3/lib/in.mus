@@ -1,0 +1,6 @@
+seq
+  repeat 3
+    note b4 250
+  par
+    note c4 500
+    note d4 500

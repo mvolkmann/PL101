@@ -1,0 +1,40 @@
+// Initializer code
+{
+  var init = require('./musInit');
+}
+
+start = (indent tag newline)+ {
+  return init.getMus();
+}
+
+tag = note / repeat / seq / par
+
+indent = indent:' '* {
+  init.setIndent(indent.length);
+}
+
+note = ' '* tag:'note' ' ' pitch:pitch ' ' dur:integer {
+  init.save({tag: tag, pitch: pitch, dur: parseInt(dur, 10)});
+}
+
+repeat = ' '* tag:'repeat' ' ' count:integer {
+  init.save({tag: tag, count: parseInt(count, 10)});
+}
+
+seq = ' '* tag:'seq' {
+  init.save({tag: tag});
+}
+
+par = ' '* tag:'par' {
+  init.save({tag: tag});
+}
+
+pitch = letter:[a-g] digit:[0-8] {
+  return letter + digit;
+}
+
+integer = d1:[1-9] rest:[0-9]* {
+  return [d1].concat(rest).join('');
+}
+
+newline = '\n'
