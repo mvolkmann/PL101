@@ -1,19 +1,13 @@
 'use strict';
 
 var assert = require('chai').assert;
+var fs = require('fs');
 var parser = require('../lib/mus');
 var util = require('util');
 
 test('mus', function () {
-  var input =
-    "seq\n" +
-    "  repeat 3\n" +
-    "    note b4 250\n" +
-    "  par\n" +
-    "    note c4 500\n" +
-    "    note d4 500\n";
-
-  var output = [{
+  var input = fs.readFileSync(__dirname + '/../lib/in.mus', 'utf8');
+  var expected = [{
     tag: 'seq',
     left: {
       tag: 'repeat',
@@ -27,7 +21,7 @@ test('mus', function () {
     }
   }];
       
-  var result = parser.parse(input);
-  //console.log('result =', util.inspect(result, false, null));
-  assert.deepEqual(result, output);
+  var actual = parser.parse(input);
+  //console.log('result =', util.inspect(actual, false, null));
+  assert.deepEqual(actual, expected);
 });
