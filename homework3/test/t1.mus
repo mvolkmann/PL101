@@ -1,0 +1,16 @@
+[
+  {
+    "tag": "seq",
+    "left": {
+      "tag": "repeat",
+      "section": {"tag": "note", "pitch": "b4", "dur": 250},
+      "count": 3
+    },
+    "right": {
+      "tag": "par",
+      "left": {"tag": "note", "pitch": "c4", "dur": 500},
+      "right": {"tag": "note", "pitch": "d4", "dur": 500}
+    }
+  }
+]
+

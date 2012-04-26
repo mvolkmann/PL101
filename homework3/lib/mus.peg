@@ -1,4 +1,3 @@
-// Initializer code
 {
   var init = require('./musInit');
 }

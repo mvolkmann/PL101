@@ -5,23 +5,17 @@ var fs = require('fs');
 var parser = require('../lib/mus');
 var util = require('util');
 
-test('mus', function () {
-  var input = fs.readFileSync(__dirname + '/../lib/in.mus', 'utf8');
-  var expected = [{
-    tag: 'seq',
-    left: {
-      tag: 'repeat',
-      section: {tag: 'note', pitch: 'b4', dur: 250},
-      count: 3
-    },
-    right: {
-      tag: 'par',
-      left: {tag: 'note', pitch: 'c4', dur: 500},
-      right: {tag: 'note', pitch: 'd4', dur: 500}
-    }
-  }];
-      
-  var actual = parser.parse(input);
-  //console.log('result =', util.inspect(actual, false, null));
-  assert.deepEqual(actual, expected);
+test('mus', function (done) {
+  var err = null;
+  var input = fs.readFileSync(__dirname + '/t1.in', 'utf8');
+  var expected = fs.readFileSync(__dirname + '/t1.mus', 'utf8');
+  try {
+    expected = JSON.parse(expected);
+    var actual = parser.parse(input);
+    //console.log('result =', util.inspect(actual, false, null));
+    assert.deepEqual(actual, expected);
+  } catch (e) {
+    err = e;
+  }
+  done(err);
 });

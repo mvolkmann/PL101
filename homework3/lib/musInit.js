@@ -7,13 +7,12 @@ var stack = [];
 
 /**
  * Returns an array containing all the objects in stack
- * that do not have a parent.
+ * that do not have a parent (are "top level").
  * It also removes bookkeeping properties.
  */
 function getMus() {
   var result = [];
   stack.forEach(function (obj) {
-    //console.log('getMus: obj =', obj);
     delete obj.indent;
     if (obj.topLevel) {
       delete obj.topLevel;
@@ -37,32 +36,32 @@ function pop(indent) {
       if (popped) {
         delete lastObj.indent;
         stack.pop();
-        //console.log('popped', lastObj);
       }
     }
   } while (popped);
 }
 
 function save(obj) {
-  //console.log('save: obj =', obj);
   obj.indent = curIndent;
   obj.topLevel = true; // assume for now
   pop(curIndent);
 
   var lastObj = _.last(stack);
+  stack.push(obj);
   if (!lastObj) {
-    stack.push(obj);
     return;
   }
 
+  // If the new object is a child of the last one on the stack ...
   if (obj.indent > lastObj.indent) {
+    delete obj.topLevel;
+
     var lastTag = lastObj.tag;
     if (lastTag === 'repeat') {
       if (lastObj.section) {
         throw new Error('A ' + lastTag + ' can only have one child.');
       } else {
         lastObj.section = obj;
-        delete obj.topLevel;
       }
     } else if (lastTag === 'seq' || lastTag === 'par') {
       if (lastObj.left) {
@@ -70,19 +69,12 @@ function save(obj) {
           throw new Error('A ' + lastTag + ' can only have two children.');
         } else {
           lastObj.right = obj;
-          delete obj.topLevel;
         }
       } else {
         lastObj.left = obj;
-        delete obj.topLevel;
       }
     }
-    //console.log('modified', lastObj);
   }
-
-  stack.push(obj);
-  //console.log('pushed', obj);
-  //console.log('stack is now', stack);
 }
 
 function setIndent(indent) {
