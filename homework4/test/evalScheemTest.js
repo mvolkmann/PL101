@@ -1,0 +1,102 @@
+'use strict';
+/*global chai: false, module: false */
+
+var assert;
+
+// If running in Node.js ...
+if (typeof module !== undefined) {
+  assert = require('chai').assert;
+  var evalScheem = require('../lib/scheem');
+} else { // assume running in a browser
+  assert = chai.assert;
+}
+
+suite('scheem');
+
+test('arithmetic', function () {
+  assert.equal(evalScheem(['+', 2, 3]), 5);
+  assert.equal(evalScheem(['*', 2, 3]), 6);
+  assert.equal(evalScheem(['/', 1, 2]), 0.5);
+  assert.equal(evalScheem(['*', ['/', 8, 4], ['+', 1, 1]]), 4);
+});
+
+test('retrieving', function () {
+  assert.equal(evalScheem(5), 5);
+  assert.equal(evalScheem('x', {'x': 5}), 5);
+  assert.equal(evalScheem(['+', 2, 3]), 5);
+  assert.equal(evalScheem(['*', 'y', 3], {y: 2}), 6);
+  assert.equal(evalScheem(['/', 'z', ['+', 'x', 'y']], {x: 1, y: 2, z: 3}), 1);
+});
+
+test('setting', function () {
+  var env = {'x': 5, 'y': 1};
+  assert.equal(evalScheem('x', env), 5);
+  assert.equal(evalScheem(['define', 'a', 5], env), 0);
+  assert.equal(env.a, 5);
+  assert.equal(evalScheem(['set!', 'a', 1], env), 0);
+  assert.equal(env.a, 1);
+  assert.equal(evalScheem(['set!', 'x', 7], env), 0);
+  assert.equal(env.x, 7);
+  assert.equal(evalScheem(['set!', 'y', ['+', 'x', 1]], env), 0);
+  assert.equal(env.x, 7);
+  assert.equal(env.y, 8);
+});
+
+test('begin', function () {
+  var env = {};
+  var prg = ['begin',
+    ['define', 'x', 5],
+    ['set!', 'x', ['+', 'x', 1]],
+    ['+', 2, 'x']];
+  assert.equal(evalScheem(prg, env), 8);
+
+  prg = ['begin', 1, 2, 3];
+  assert.equal(evalScheem(prg, env), 3);
+
+  prg = ['begin', ['+', 2, 2]];
+  assert.equal(evalScheem(prg, env), 4);
+
+  prg = ['begin', 'x', 'y', 'x'];
+  assert.equal(evalScheem(prg, env), 6);
+
+  env.y = 1;
+  prg = ['begin', ['set!', 'x', 5], ['set!', 'x', ['+', 'y', 'x'], 'x']];
+  assert.equal(evalScheem(prg, env), 0);
+  assert.equal(env.x, 6);
+});
+
+test('quote', function () {
+  var env = {};
+  assert.equal(evalScheem(['+', 2, 3], env), 5);
+  assert.deepEqual(evalScheem(['quote', ['+', 2, 3]], env), ['+', 2, 3]);
+  assert.deepEqual(evalScheem(['quote', ['quote', ['+', 2, 3]]], env), ['quote', ['+', 2, 3]]);
+});
+
+test('comparison', function () {
+  var env = {};
+  assert.equal(evalScheem(['=', 2, ['+', 1, 1]], env), '#t');
+  assert.equal(evalScheem(['+', 2, 3], env), 5);
+  assert.equal(evalScheem(['<', 2, 2], env), '#f');
+  assert.equal(evalScheem(['<', 2, 3], env), '#t');
+  assert.equal(evalScheem(['<', ['+', 1, 1], ['+', 2, 3]], env), '#t');
+});
+
+test('list operations', function () {
+  var env = {};
+  assert.deepEqual(evalScheem(['quote', [2, 3]], env), [2, 3]);
+  assert.deepEqual(evalScheem(['cons', 1, ['quote', [2, 3]]], env), [1, 2, 3]);
+  assert.deepEqual(evalScheem(['cons', ['quote', [1, 2]], ['quote', [3, 4]]], env),
+    [[1, 2], 3, 4]);
+  assert.deepEqual(evalScheem(['car', ['quote', [[1, 2], 3, 4]]], env), [1, 2]);
+  assert.deepEqual(evalScheem(['cdr', ['quote', [[1, 2], 3, 4]]], env), [3, 4]);
+});
+
+test('conditionals', function () {
+  var env = {'error': -1};
+  var error = 'error';
+  assert.equal(evalScheem(['if', ['=', 1, 1], 2, 3], env), 2);
+  assert.equal(evalScheem(['if', ['=', 1, 0], 2, 3], env), 3);
+  assert.equal(evalScheem(['if', ['=', 1, 1], 2, error], env), 2);
+  assert.equal(evalScheem(['if', ['=', 1, 1], error, 3], env), env.error);
+  assert.equal(evalScheem(['if', ['=', 1, 1], ['if', ['=', 2, 3], 10, 11], 12], env), 11);
+});
