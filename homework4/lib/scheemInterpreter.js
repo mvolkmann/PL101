@@ -1,7 +1,28 @@
 'use strict';
 /*global module: false */
-
 var parser = require('../scheemParser');
+var _ = require('underscore');
+
+function evalAtom(atom, env) {
+  //console.log('evalAtom: atom =', atom);
+  if (/^\d+$/.test(atom)) {
+    //console.log('evalAtom: got integer');
+    return parseInt(atom);
+  } else if (/^\d*\.\d+$/.test(atom)) {
+    //console.log('evalAtom: got float');
+    return parseFloat(atom);
+  } else if (atom === '#t' || atom === '#f') {
+    //console.log('evalAtom: got boolean');
+    return atom;
+  } else {
+    var value = env[atom];
+    //console.log('evalAtom: value =', value);
+    if (!value) {
+      throw new Error('undefined variable "' + atom + '"');
+    }
+    return value;
+  }
+}
 
 function evalScheem(expr, env) {
   if (!env) {
@@ -15,7 +36,7 @@ function evalScheem(expr, env) {
 
   //if (_.isString(expr)) {
   if (typeof expr === 'string') {
-    return env[expr];
+    return evalAtom(expr, env);
   }
 
   var operator = expr[0];

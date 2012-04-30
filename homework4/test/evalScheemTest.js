@@ -25,35 +25,44 @@ test('arithmetic', function () {
   assert.equal(evalScheemString('(/ 8 4)'), 2);
   assert.equal(evalScheemString('(+ 1 1)'), 2);
   assert.equal(evalScheemString('(* 2 2)'), 4);
-  assert.equal(evalScheemString('(* (/ 8 4) (+ 1 1))'), 4);
-  //assert.equal(evalScheemString('(+ (+ 1 2) (+ 3 4) )'), 10);
+  assert.equal(evalScheemString('(+ (+ 1 2) (+ 3 4) )'), 10);
 });
 
-/*
 test('retrieving', function () {
   assert.equal(evalScheem(5), 5);
   assert.equal(evalScheem('x', {'x': 5}), 5);
   assert.equal(evalScheem(['+', 2, 3]), 5);
   assert.equal(evalScheem(['*', 'y', 3], {y: 2}), 6);
-  assert.equal(evalScheem(['/', 'z', ['+', 'x', 'y']], {x: 1, y: 2, z: 3}), 1);
+
+  var env = {x: 1, y: 2, z: 3};
+  assert.equal(evalScheem(['/', 'z', ['+', 'x', 'y']], env), 1);
+  assert.equal(evalScheemString('(/ z (+ x y))', env), 1);
 });
 
 test('setting', function () {
   var env = {'x': 5, 'y': 1};
+
   assert.equal(evalScheem('x', env), 5);
+
   assert.equal(evalScheem(['define', 'a', 5], env), 0);
   assert.equal(env.a, 5);
+
   assert.equal(evalScheem(['set!', 'a', 1], env), 0);
   assert.equal(env.a, 1);
+
   assert.equal(evalScheem(['set!', 'x', 7], env), 0);
   assert.equal(env.x, 7);
+
   assert.equal(evalScheem(['set!', 'y', ['+', 'x', 1]], env), 0);
   assert.equal(env.x, 7);
   assert.equal(env.y, 8);
+
+  assert.equal(evalScheemString('(set! x (+ y 2))', env), 0);
+  assert.equal(env.x, 10);
 });
 
 test('begin', function () {
-  var env = {};
+  var env = {y: 2};
   var prg = ['begin',
     ['define', 'x', 5],
     ['set!', 'x', ['+', 'x', 1]],
@@ -70,8 +79,12 @@ test('begin', function () {
   assert.equal(evalScheem(prg, env), 6);
 
   env.y = 1;
-  prg = ['begin', ['set!', 'x', 5], ['set!', 'x', ['+', 'y', 'x'], 'x']];
+  prg = ['begin', ['set!', 'x', 5], ['set!', 'x', ['+', 'y', 'x']]];
   assert.equal(evalScheem(prg, env), 0);
+  assert.equal(env.x, 6);
+
+  prg = '(begin (set! x 5) (set! x (+ y x)))';
+  assert.equal(evalScheemString(prg, env), 0);
   assert.equal(env.x, 6);
 });
 
@@ -79,7 +92,8 @@ test('quote', function () {
   var env = {};
   assert.equal(evalScheem(['+', 2, 3], env), 5);
   assert.deepEqual(evalScheem(['quote', ['+', 2, 3]], env), ['+', 2, 3]);
-  assert.deepEqual(evalScheem(['quote', ['quote', ['+', 2, 3]]], env), ['quote', ['+', 2, 3]]);
+  assert.deepEqual(evalScheem(['quote', ['quote', ['+', 2, 3]]], env),
+    ['quote', ['+', 2, 3]]);
 });
 
 test('comparison', function () {
@@ -89,25 +103,29 @@ test('comparison', function () {
   assert.equal(evalScheem(['<', 2, 2], env), '#f');
   assert.equal(evalScheem(['<', 2, 3], env), '#t');
   assert.equal(evalScheem(['<', ['+', 1, 1], ['+', 2, 3]], env), '#t');
+
+  assert.equal(evalScheemString('(< (+ 1 1) (+ 2 3))'), '#t');
 });
 
 test('list operations', function () {
-  var env = {};
-  assert.deepEqual(evalScheem(['quote', [2, 3]], env), [2, 3]);
-  assert.deepEqual(evalScheem(['cons', 1, ['quote', [2, 3]]], env), [1, 2, 3]);
-  assert.deepEqual(evalScheem(['cons', ['quote', [1, 2]], ['quote', [3, 4]]], env),
+  assert.deepEqual(evalScheem(['quote', [2, 3]]), [2, 3]);
+  assert.deepEqual(evalScheem(['cons', 1, ['quote', [2, 3]]]), [1, 2, 3]);
+  assert.deepEqual(evalScheem(['cons', ['quote', [1, 2]], ['quote', [3, 4]]]),
     [[1, 2], 3, 4]);
-  assert.deepEqual(evalScheem(['car', ['quote', [[1, 2], 3, 4]]], env), [1, 2]);
-  assert.deepEqual(evalScheem(['cdr', ['quote', [[1, 2], 3, 4]]], env), [3, 4]);
+  assert.deepEqual(evalScheem(['car', ['quote', [[1, 2], 3, 4]]]), [1, 2]);
+  assert.deepEqual(evalScheem(['cdr', ['quote', [[1, 2], 3, 4]]]), [3, 4]);
+
+  assert.deepEqual(evalScheemString("(cdr '((1 2) 3 4))"), [3, 4]);
 });
 
 test('conditionals', function () {
   var env = {'error': -1};
   var error = 'error';
-  assert.equal(evalScheem(['if', ['=', 1, 1], 2, 3], env), 2);
-  assert.equal(evalScheem(['if', ['=', 1, 0], 2, 3], env), 3);
+  assert.equal(evalScheem(['if', ['=', 1, 1], 2, 3]), 2);
+  assert.equal(evalScheem(['if', ['=', 1, 0], 2, 3]), 3);
   assert.equal(evalScheem(['if', ['=', 1, 1], 2, error], env), 2);
   assert.equal(evalScheem(['if', ['=', 1, 1], error, 3], env), env.error);
-  assert.equal(evalScheem(['if', ['=', 1, 1], ['if', ['=', 2, 3], 10, 11], 12], env), 11);
+  assert.equal(evalScheem(['if', ['=', 1, 1], ['if', ['=', 2, 3], 10, 11], 12]), 11);
+
+  assert.equal(evalScheemString('(if (= 1 1) (if (= 2 3) 10 11) 12)'), 11);
 });
-*/

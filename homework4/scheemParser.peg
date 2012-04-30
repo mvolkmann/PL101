@@ -20,16 +20,16 @@ quote = _ "'" e:expr _ {
 
 atom = chars:validChar+ {
   var s = chars.join('');
-  if (/\d+/.test(s)) {
+  if (/^\d+$/.test(s)) {
     s = parseInt(s);
-  } else if (/\d*\.\d+/.test(s)) {
+  } else if (/^\d*\.\d+$/.test(s)) {
     s = parseFloat(s);
   }
   //console.log('found atom', s, 'type is', typeof s);
   return s;
 }
 
-validChar = [0-9a-zA-Z_?!+\-=@#$%^&*/.]
+validChar = [0-9a-zA-Z_?!+\-=@#$%^&*/.<>]
 
 ws = [ \t\n]
 
