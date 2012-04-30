@@ -1,15 +1,17 @@
 <html>
   <head>
+    <meta charset="utf-8">
     <title>Mocha Tests</title>
     <link rel="stylesheet" href="http://nathansuniversity.com/css/mocha.css" />
     <script src="http://nathansuniversity.com/js/jquery-1.7.1.min.js"></script>
     <script src="http://nathansuniversity.com/js/chai.js"></script>
     <script src="http://nathansuniversity.com/js/mocha.js"></script>
-    <script>mocha.setup('qunit')</script>
-    <script src="lib/scheem.js"></script>
+    <script>mocha.setup('tdd')</script>
+    <!--script>mocha.setup('qunit')</script-->
+    <script src="lib/scheemInterpreter.js"></script>
     <script src="test/evalScheemTest.js"></script>
     <script>
-      $(function(){
+      $(function () {
         mocha.run();
       });
     </script>
