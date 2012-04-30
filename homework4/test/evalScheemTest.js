@@ -2,6 +2,7 @@
 /*global chai: false, module: false */
 
 var assert;
+var parse;
 
 // If running in Node.js ...
 if (typeof module !== undefined) {
@@ -9,8 +10,15 @@ if (typeof module !== undefined) {
   var interpreter = require('../lib/scheemInterpreter');
   var evalScheem = interpreter.evalScheem;
   var evalScheemString = interpreter.evalScheemString;
+
+  // TODO: Why do this here?
+  //var fs = require('fs');
+  //var peg = require('pegjs');
+  //var parse = peg.buildParser(fs.readFileSync('scheemParser.peg', 'utf-8')).parse;
+
 } else { // assume running in a browser
   assert = chai.assert;
+  parse = SCHEEM.parse;
 }
 
 suite('scheem');
