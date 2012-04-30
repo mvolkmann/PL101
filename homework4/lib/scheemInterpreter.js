@@ -1,7 +1,11 @@
 'use strict';
 /*global module: false */
-var parser = require('../scheemParser');
-var _ = require('underscore');
+
+// If running in Node.js ...
+if (typeof module !== undefined) {
+  var parser = require('../scheemParser');
+  //var _ = require('underscore');
+}
 
 function evalAtom(atom, env) {
   //console.log('evalAtom: atom =', atom);
