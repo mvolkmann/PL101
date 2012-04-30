@@ -3,28 +3,21 @@ start = expr+
 expr = atom / quote / list
 
 list = _ '(' _ first:expr rest:spaceExpr* _ ')' _ {
-  var l = [first].concat(rest);
-  //console.log('found list:', l);
-  return l;
+  return [first].concat(rest);
 }
 
 spaceExpr = ws+ e:expr {
-  //console.log('found spaceExpr:', e);
   return e;
 }
 
 quote = _ "'" e:expr _ {
-  //console.log('found quote:', e);
   return ['quote', e];
 }
 
 atom = chars:validChar+ {
-  var a = chars.join('');
-  //console.log('found atom:', a);
-  return a;
+  return chars.join('');
 }
 
-// Needed to escape -!
 validChar = [0-9a-zA-Z_?!+\-=@#$%^&*/.]
 
 ws = [ \t\n]
@@ -32,8 +25,5 @@ ws = [ \t\n]
 _ = (ws / comment)*
 
 comment = ';;' text:[^\n]* '\n' {
-  var c = text.join('');
-  //console.log('comment =', c);
-  //return column === 0 ? c : null;
-  return c;
+  return text.join('');
 }

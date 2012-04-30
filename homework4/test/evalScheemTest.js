@@ -6,7 +6,9 @@ var assert;
 // If running in Node.js ...
 if (typeof module !== undefined) {
   assert = require('chai').assert;
-  var evalScheem = require('../lib/scheem');
+  var interpreter = require('../lib/scheemInterpreter');
+  var evalScheem = interpreter.evalScheem;
+  var evalScheemString = interpreter.evalScheemString;
 } else { // assume running in a browser
   assert = chai.assert;
 }
@@ -18,8 +20,16 @@ test('arithmetic', function () {
   assert.equal(evalScheem(['*', 2, 3]), 6);
   assert.equal(evalScheem(['/', 1, 2]), 0.5);
   assert.equal(evalScheem(['*', ['/', 8, 4], ['+', 1, 1]]), 4);
+
+  assert.equal(evalScheemString('(+ 2 3)'), 5);
+  assert.equal(evalScheemString('(/ 8 4)'), 2);
+  assert.equal(evalScheemString('(+ 1 1)'), 2);
+  assert.equal(evalScheemString('(* 2 2)'), 4);
+  assert.equal(evalScheemString('(* (/ 8 4) (+ 1 1))'), 4);
+  //assert.equal(evalScheemString('(+ (+ 1 2) (+ 3 4) )'), 10);
 });
 
+/*
 test('retrieving', function () {
   assert.equal(evalScheem(5), 5);
   assert.equal(evalScheem('x', {'x': 5}), 5);
@@ -100,3 +110,4 @@ test('conditionals', function () {
   assert.equal(evalScheem(['if', ['=', 1, 1], error, 3], env), env.error);
   assert.equal(evalScheem(['if', ['=', 1, 1], ['if', ['=', 2, 3], 10, 11], 12], env), 11);
 });
+*/

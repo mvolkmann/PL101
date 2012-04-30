@@ -1,0 +1,5 @@
+#!/bin/sh
+
+clear
+pegjs scheemParser.peg
+mocha -u qunit -R list

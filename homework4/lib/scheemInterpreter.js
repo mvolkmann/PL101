@@ -1,6 +1,8 @@
 'use strict';
 /*global module: false */
 
+var parser = require('../scheemParser');
+
 function evalScheem(expr, env) {
   if (!env) {
     env = {};
@@ -90,7 +92,20 @@ function evalScheem(expr, env) {
   }
 }
 
+function evalScheemString(s, env) {
+  env = env || {};
+  //console.log('s = "' + s + '"');
+  var exprs = parser.parse(s);
+  var result;
+  exprs.forEach(function (expr) {
+    //console.log('evaluating', expr);
+    result = evalScheem(expr, env);
+  });
+  return result;
+}
+
 // If running in Node.js ...
 if (typeof module !== undefined) {
-  module.exports = evalScheem;
+  exports.evalScheem = evalScheem;
+  exports.evalScheemString = evalScheemString;
 }
