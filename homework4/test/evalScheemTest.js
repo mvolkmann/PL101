@@ -94,6 +94,8 @@ test('quote', function () {
   assert.deepEqual(evalScheem(['quote', ['+', 2, 3]], env), ['+', 2, 3]);
   assert.deepEqual(evalScheem(['quote', ['quote', ['+', 2, 3]]], env),
     ['quote', ['+', 2, 3]]);
+
+  assert.deepEqual(evalScheemString("'(+ 2 3)"), "(+ 2 3)");
 });
 
 test('comparison', function () {
@@ -115,7 +117,7 @@ test('list operations', function () {
   assert.deepEqual(evalScheem(['car', ['quote', [[1, 2], 3, 4]]]), [1, 2]);
   assert.deepEqual(evalScheem(['cdr', ['quote', [[1, 2], 3, 4]]]), [3, 4]);
 
-  assert.deepEqual(evalScheemString("(cdr '((1 2) 3 4))"), [3, 4]);
+  assert.deepEqual(evalScheemString("(cdr '((1 2) 3 4))"), '(3 4)');
 });
 
 test('conditionals', function () {

@@ -28,6 +28,22 @@ function evalAtom(atom, env) {
   }
 }
 
+function quote(expr) {
+  if (Array.isArray(expr)) {
+    var s = '(';
+    expr.forEach(function (subExpr) {
+      s += quote(subExpr) + ' ';
+    });
+
+    // Remove trailing space and add right paren.
+    s = s.slice(0, -1) + ')';
+
+    return s;
+  } else {
+    return expr;
+  }
+}
+
 function evalScheem(expr, env) {
   if (!env) {
     env = {};
@@ -83,6 +99,9 @@ function evalScheem(expr, env) {
     });
     return result;
   case 'quote':
+    if (expr.length !== 2) {
+      throw new Error('quote must have one argument');
+    }
     return expr[1];
   case '=':
     lhs = evalScheem(operand1, env);
@@ -126,7 +145,8 @@ function evalScheemString(s, env) {
     //console.log('evaluating', expr);
     result = evalScheem(expr, env);
   });
-  return result;
+
+  return Array.isArray(result) ? quote(result) : result;
 }
 
 // If running in Node.js ...
