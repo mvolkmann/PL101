@@ -1,0 +1,32 @@
+* {
+  font-family: Arial, sans-serif;
+  font-size: 18pt;
+}
+
+body {
+  background-color: linen;
+}
+
+.code {
+  font-family: monospace;
+}
+
+#console {
+  background-color: white;
+  border: solid red 3px;
+  padding: 10px;
+  width: 775px;
+}
+
+#input {
+  border: solid red 3px;
+  height: 200px;
+  padding: 10px;
+  width: 800px;
+}
+
+#runButton {
+  background-color: yellow;
+  border-radius: 15px;
+  margin: 10px;
+}

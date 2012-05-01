@@ -1,0 +1,29 @@
+<html>
+  <head>
+    <title>Scheem Live Demo</title>
+    <link rel="stylesheet" href="livetest.css" />
+    <script src="http://nathansuniversity.com/js/jquery-1.7.1.min.js"></script>
+    <script src="lib/scheemInterpreter.js"></script>
+    <script src="scheemParserBrowser.js"></script>
+    <script src="livetest.js"></script>
+  </head>
+  <body>
+    <h2>Mark Volkmann's Scheem Parser</h2>
+    <p>
+    The currently supported functions are:<br/>
+      <span class="code">
+      + - * /
+      define set!
+      begin quote
+      = <
+      cons car cdr
+      if
+    </span>
+    </p>
+    <textarea id="input">(+ 1 2)</textarea>
+    <div>
+      <input id="runButton" type="button" value="Run"/>
+    </div>
+    <div id="console">Output will appear here.</div>
+  </body>
+</html>
