@@ -2,7 +2,7 @@
 /*global module: false */
 
 // If running in Node.js ...
-if (typeof module !== undefined) {
+if (typeof module !== 'undefined') {
   var parser = require('../scheemParser');
   //var _ = require('underscore');
 }
@@ -150,7 +150,7 @@ function evalScheemString(s, env) {
 }
 
 // If running in Node.js ...
-if (typeof module !== undefined) {
+if (typeof module !== 'undefined') {
   exports.evalScheem = evalScheem;
   exports.evalScheemString = evalScheemString;
 }
