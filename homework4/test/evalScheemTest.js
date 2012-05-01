@@ -140,4 +140,12 @@ suite('scheem', function () {
     assert.equal(evalScheemString('(if (= 1 1) (if (= 2 3) 10 11) 12)'), 11);
   });
 
+  test('errors', function () {
+    assert.throws(evalScheemString.bind(null, 'x'), Error, 'undefined variable "x"');
+    assert.throws(evalScheemString.bind(null, '(set! x 1)'), Error, 'variable "x" is not defined');
+    assert.throws(evalScheemString.bind(null, '(quote 1 2)'), Error, 'quote must have one argument');
+    assert.throws(evalScheemString.bind(null, '(if x y)'), Error, 'if must have three arguments');
+    assert.throws(evalScheemString.bind(null, '(foo x y)'), Error, 'unrecognized operator');
+  });
+
 }); // end of suite

@@ -4,4 +4,4 @@ clear
 #pegjs -e scheem scheemParser.peg
 pegjs scheemParser.peg
 pegjs -e parser scheemParser.peg scheemParserBrowser.js
-mocha -u qunit -R list
+mocha -u tdd -R list

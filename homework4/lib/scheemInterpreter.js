@@ -88,7 +88,7 @@ function evalScheem(expr, env) {
     return 0;
   case 'set!':
     if (!env[operand1]) {
-      throw new Error('variable ' + operand1 + ' is not defined');
+      throw new Error('variable "' + operand1 + '" is not defined');
     }
     env[operand1] = evalScheem(operand2, env);
     return 0;
