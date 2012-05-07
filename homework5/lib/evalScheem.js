@@ -4,6 +4,7 @@
 var lookup; // defined later
 var quote; // defined later
 var set; // defined later
+var setBinding; // defined later
 
 // If running in Node.js ...
 if (typeof module !== 'undefined') {
@@ -12,11 +13,13 @@ if (typeof module !== 'undefined') {
 }
 
 function addBinding(env, name, value) {
+  //console.log('addBinding: name =', name, ', value =', value);
   env.bindings[name] = value;
 }
 
 function evalAtom(atom, env) {
   //console.log('evalAtom: atom =', atom);
+  //console.log('evalAtom: env =', env);
   if (/^\d+$/.test(atom)) {
     //console.log('evalAtom: got integer');
     return parseInt(atom, 10);
@@ -29,7 +32,7 @@ function evalAtom(atom, env) {
   } else {
     var value = lookup(env, atom);
     //console.log('evalAtom: value =', value);
-    if (!value) {
+    if (value === undefined) {
       throw new Error('undefined variable "' + atom + '"');
     }
     return value;
@@ -87,18 +90,21 @@ function evalScheem(expr, env) {
     }
     return result;
   case 'define':
+    //console.log('define: name =', operand1,
+    //  ', value =', operand2);
     addBinding(env, operand1, evalScheem(operand2, env));
     return 0;
   case 'set!':
-    if (!env.bindings[operand1]) {
-      throw new Error('variable "' + operand1 + '" is not defined');
-    }
-    addBinding(env, operand1, evalScheem(operand2, env));
+    //console.log('in set! case, operand1 =', operand1);
+    //console.log('in set! case, operand2 =', operand2);
+    setBinding(env, operand1, evalScheem(operand2, env));
     return 0;
   case 'begin':
     expr.shift();
     expr.forEach(function (e) {
+      //console.log('\nbegin: evaluating', e);
       result = evalScheem(e, env);
+      //console.log('begin: result =', result);
     });
     return result;
   case 'quote':
@@ -107,8 +113,11 @@ function evalScheem(expr, env) {
     }
     return expr[1];
   case '=':
+    //console.log('=: operand1 =', operand1);
+    //console.log('=: env =', env);
     lhs = evalScheem(operand1, env);
     rhs = evalScheem(operand2, env);
+    //console.log('=: lhs =', lhs, ', rhs =', rhs);
     return lhs === rhs ? '#t' : '#f';
   case '<':
     lhs = evalScheem(operand1, env);
@@ -165,9 +174,10 @@ function evalScheem(expr, env) {
       return evalScheem(body, newEnv);
     };
   default:
-    //console.log('in default case, operator =', operator);
+    //console.log('\nin default case, operator =', operator);
     fn = evalScheem(operator, env);
     //console.log('in default case, fn =', fn);
+    //console.log('in default case, env =', env);
     var args = [];
     for (i = 1; i < len; i++) {
       var arg = expr[i];
@@ -199,7 +209,9 @@ function lookup(env, name) {
 
   var value = bindings[name];
   var outer = env.outer;
-  return value || outer && lookup(outer, name) || null;
+  return value !== undefined ? value :
+    outer ? lookup(outer, name) :
+    undefined;
 }
 
 function quote(expr) {
@@ -232,6 +244,22 @@ function set(name, expr, env) {
     throw new Error('variable "' + name + '" is not defined');
   }
   bindings[name] = evalScheem(expr, env);
+}
+
+function setBinding(env, name, value) {
+  //console.log('setBinding: name =', name, 'value =', value);
+  var bindings = env.bindings;
+  var currValue = bindings[name];
+  if (currValue) {
+    bindings[name] = value;
+  } else {
+    var outer = env.outer;
+    if (outer) {
+      setBinding(outer, name, value);
+    } else {
+      throw new Error('variable "' + name + '" is not defined');
+    }
+  }
 }
 
 // If running in Node.js ...
