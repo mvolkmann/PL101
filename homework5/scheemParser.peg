@@ -1,0 +1,40 @@
+start = expr+
+
+expr = atom / quote / list
+
+list = _ '(' _ first:expr rest:spaceExpr* _ ')' _ {
+  var l = [first];
+  l.push.apply(l, rest);
+  //console.log('found list', l);
+  return l;
+}
+
+spaceExpr = _ e:expr {
+  //console.log('found spaceExpr', e);
+  return e;
+}
+
+quote = _ "'" e:expr _ {
+  return ['quote', e];
+}
+
+atom = chars:validChar+ {
+  var s = chars.join('');
+  if (/^\d+$/.test(s)) {
+    s = parseInt(s);
+  } else if (/^\d*\.\d+$/.test(s)) {
+    s = parseFloat(s);
+  }
+  //console.log('found atom', s, 'type is', typeof s);
+  return s;
+}
+
+validChar = [0-9a-zA-Z_?!+\-=@#$%^&*/.<>]
+
+ws = [ \t\n]
+
+_ = (ws / comment)*
+
+comment = ';;' text:[^\n]* '\n' {
+  return text.join('');
+}
