@@ -116,7 +116,7 @@ function evalScheem(expr, env) {
     var newEnv = {bindings: bindings, outer: env};
     body = expr[3];
     return evalScheem(body, newEnv);
-  case 'lambda-one':
+  case 'lambda':
     var argName = operand1;
     body = operand2;
     return function (argValue) {

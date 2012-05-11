@@ -1,7 +1,7 @@
 'use strict';
 
 var assert = require('chai').assert;
-var evalScheemString = require('../lib/try8').evalScheemString;
+var evalScheemString = require('../lib/evalScheem').evalScheemString;
 
 test('try8', function () {
   var env = {bindings: {}};

@@ -1,0 +1,9 @@
+(begin
+  (define reverse (lambda l
+    (begin
+      ;;(alert 'l '= l)
+      (if (emptyp l)
+        '()
+        (cat (reverse (cdr l)) (list (car l)))))))
+
+  (reverse '(a b c)))

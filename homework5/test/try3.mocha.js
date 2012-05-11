@@ -1,7 +1,7 @@
 'use strict';
 
 var assert = require('chai').assert;
-var update = require('../lib/try3');
+var update = require('../lib/try3'); // can't use evalScheem.js
 
 test('try3', function () {
   var env = {bindings: {'x': 1}};

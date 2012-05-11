@@ -1,7 +1,7 @@
 'use strict';
 
 var assert = require('chai').assert;
-var evalScheem = require('../lib/try4');
+var evalScheem = require('../lib/evalScheem').evalScheem;
 
 test('try4', function () {
   var always3 = function (x) {

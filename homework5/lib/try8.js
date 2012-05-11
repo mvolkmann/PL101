@@ -1,11 +1,14 @@
 'use strict';
 /*global module: false */
 
-var evalScheem; // defined later
-var lookup; // defined later
-var quote; // defined later
-var set; // defined later
-var setBinding; // defined later
+// These functions are defined after their first use.
+var evalScheem;
+var lookup;
+var oneArg;
+var quote;
+var set;
+var setBinding;
+var twoArgs;
 
 // If running in Node.js ...
 if (typeof module !== 'undefined') {
@@ -53,10 +56,52 @@ function addBuiltins(env) {
   };
 
   bindings['='] = function () {
-    if (arguments.length !== 2) {
-      throw new Error('= must have two arguments');
-    }
+    twoArgs('=', arguments);
     return arguments[0] === arguments[1] ? '#t' : '#f';
+  };
+
+  bindings['<'] = function () {
+    twoArgs('<', arguments);
+    return arguments[0] < arguments[1] ? '#t' : '#f';
+  };
+
+  bindings['<='] = function () {
+    twoArgs('<=', arguments);
+    return arguments[0] <= arguments[1] ? '#t' : '#f';
+  };
+
+  bindings['>'] = function () {
+    twoArgs('>', arguments);
+    return arguments[0] > arguments[1] ? '#t' : '#f';
+  };
+
+  bindings['>='] = function () {
+    twoArgs('>=', arguments);
+    return arguments[0] >= arguments[1] ? '#t' : '#f';
+  };
+
+  bindings.begin = function () {
+    var len = arguments.length;
+    return arguments[len - 1];
+  };
+
+  bindings.car = function () {
+    oneArg('car', arguments);
+    var list = arguments[0];
+    return list[0];
+  };
+
+  bindings.cdr = function () {
+    oneArg('car', arguments);
+    var list = arguments[0];
+    list.shift();
+    return list;
+  };
+
+  bindings.cons = function () {
+    var result = [arguments[0]];
+    result.push.apply(result, arguments[1]);
+    return result;
   };
 }
 
@@ -96,29 +141,19 @@ function evalScheem(expr, env) {
   }
 
   var body;
-  var fn;
   var i;
+  var len = expr.length;
   var operator = expr[0];
   var operand1 = expr[1];
   var operand2 = expr[2];
-  var len = expr.length;
-  var lhs;
-  var name;
-  var rhs;
-  var result;
 
   switch (operator) {
-  case 'define':
-    //console.log('define: name =', operand1,
-    //  ', value =', operand2);
-    addBinding(env, operand1, evalScheem(operand2, env));
-    return 0;
-  case 'set!':
-    //console.log('in set! case, operand1 =', operand1);
-    //console.log('in set! case, operand2 =', operand2);
-    setBinding(env, operand1, evalScheem(operand2, env));
-    return 0;
+
+  /*
   case 'begin':
+    // It seems that this doesn't have to be a special form,
+    // but keep this code until you're sure!
+    var result;
     expr.shift();
     expr.forEach(function (e) {
       //console.log('\nbegin: evaluating', e);
@@ -126,41 +161,25 @@ function evalScheem(expr, env) {
       //console.log('begin: result =', result);
     });
     return result;
-  case 'quote':
-    if (expr.length !== 2) {
-      throw new Error('quote must have one argument');
-    }
-    return expr[1];
-  case '<':
-    lhs = evalScheem(operand1, env);
-    rhs = evalScheem(operand2, env);
-    return lhs < rhs ? '#t' : '#f';
-  case 'cons':
-    lhs = evalScheem(operand1, env);
-    rhs = evalScheem(operand2, env);
-    result = [lhs];
-    result.push.apply(result, rhs);
-    return result;
-  case 'car':
-    lhs = evalScheem(operand1, env);
-    return lhs[0];
-  case 'cdr':
-    lhs = evalScheem(operand1, env);
-    lhs.shift();
-    return lhs;
+  */
+
+  case 'define':
+    // Must be a special form to avoid evaluating variable name.
+    addBinding(env, operand1, evalScheem(operand2, env));
+    return 0;
+
   case 'if':
-    if (expr.length !== 4) {
+    // Must be a special form to avoid evaluating
+    // both the "then" and "else" arguments.
+    if (len !== 4) {
       throw new Error('if must have three arguments');
     }
     var condition = evalScheem(expr[1], env);
     var index = condition === '#t' ? 2 : 3;
     return evalScheem(expr[index], env);
-  case 'let-one':
-    var newEnv = {bindings: {}, outer: env};
-    addBinding(newEnv, operand1, evalScheem(operand2, env));
-    body = expr[3];
-    return evalScheem(body, newEnv);
+
   case 'lambda':
+    // Must be a special form to avoid evaluating parameter names.
     var argNames = [];
     for (i = 1; i < len; i++) {
       argNames.push(expr[i]);
@@ -177,25 +196,33 @@ function evalScheem(expr, env) {
       //console.log('in lambda case, newEnv =', newEnv);
       return evalScheem(body, newEnv);
     };
-  case 'lambda-one':
-    var argName = operand1;
-    body = operand2;
-    return function (argValue) {
-      var newEnv = {bindings: {}, outer: env};
-      addBinding(newEnv, argName, argValue);
-      return evalScheem(body, newEnv);
-    };
+
+  case 'let-one':
+    // Must be a special form to avoid evaluating variable name.
+    var newEnv = {bindings: {}, outer: env};
+    addBinding(newEnv, operand1, evalScheem(operand2, env));
+    body = expr[3];
+    return evalScheem(body, newEnv);
+
+  case 'quote':
+    // Must be a special form to avoid evaluating first argument.
+    if (len !== 2) {
+      throw new Error('quote must have one argument');
+    }
+    return expr[1];
+
+  case 'set!':
+    // Must be a special form to avoid evaluating variable name.
+    setBinding(env, operand1, evalScheem(operand2, env));
+    return 0;
+
   default:
-    //console.log('\nin default case, operator =', operator);
-    fn = evalScheem(operator, env);
-    //console.log('in default case, fn =', fn);
-    //console.log('in default case, env =', env);
+    var fn = evalScheem(operator, env);
     var args = [];
     for (i = 1; i < len; i++) {
       var arg = expr[i];
       args.push(evalScheem(arg, env));
     }
-    //console.log('in default case, args =', args);
     return fn.apply(null, args);
   }
 }
@@ -214,6 +241,14 @@ function evalScheemString(s, env) {
   return Array.isArray(result) ? quote(result) : result;
 }
 
+function getBindings(env, name) {
+  var bindings = env.bindings;
+  var value = bindings[name];
+  var outer = env.outer;
+  return value !== undefined ? bindings :
+    outer ? getBindings(outer, name) : null;
+}
+
 function lookup(env, name) {
   var bindings = env.bindings;
   if (bindings === undefined) {
@@ -225,6 +260,12 @@ function lookup(env, name) {
   return value !== undefined ? value :
     outer ? lookup(outer, name) :
     undefined;
+}
+
+function oneArg(operator, args) {
+  if (args.length !== 1) {
+    throw new Error(operator + ' must have one argument');
+  }
 }
 
 function quote(expr) {
@@ -241,14 +282,6 @@ function quote(expr) {
   } else {
     return expr;
   }
-}
-
-function getBindings(env, name) {
-  var bindings = env.bindings;
-  var value = bindings[name];
-  var outer = env.outer;
-  return value !== undefined ? bindings :
-    outer ? getBindings(outer, name) : null;
 }
 
 function set(name, expr, env) {
@@ -272,6 +305,12 @@ function setBinding(env, name, value) {
     } else {
       throw new Error('variable "' + name + '" is not defined');
     }
+  }
+}
+
+function twoArgs(operator, args) {
+  if (args.length !== 2) {
+    throw new Error(operator + ' must have two arguments');
   }
 }
 

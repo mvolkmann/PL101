@@ -2,15 +2,11 @@ start = expr+
 
 expr = atom / quote / list
 
-list = _ '(' _ first:expr rest:spaceExpr* _ ')' _ {
-  var l = [first];
-  l.push.apply(l, rest);
-  //console.log('found list', l);
-  return l;
+list = _ '(' exprs:spaceExpr* _ ')' _ {
+  return exprs;
 }
 
 spaceExpr = _ e:expr {
-  //console.log('found spaceExpr', e);
   return e;
 }
 

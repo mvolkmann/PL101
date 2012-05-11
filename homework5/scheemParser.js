@@ -132,7 +132,7 @@ module.exports = (function(){
       }
       
       function parse_list() {
-        var result0, result1, result2, result3, result4, result5, result6, result7;
+        var result0, result1, result2, result3, result4, result5;
         var pos0, pos1;
         
         pos0 = pos;
@@ -149,40 +149,28 @@ module.exports = (function(){
             }
           }
           if (result1 !== null) {
-            result2 = parse__();
+            result2 = [];
+            result3 = parse_spaceExpr();
+            while (result3 !== null) {
+              result2.push(result3);
+              result3 = parse_spaceExpr();
+            }
             if (result2 !== null) {
-              result3 = parse_expr();
+              result3 = parse__();
               if (result3 !== null) {
-                result4 = [];
-                result5 = parse_spaceExpr();
-                while (result5 !== null) {
-                  result4.push(result5);
-                  result5 = parse_spaceExpr();
+                if (input.charCodeAt(pos) === 41) {
+                  result4 = ")";
+                  pos++;
+                } else {
+                  result4 = null;
+                  if (reportFailures === 0) {
+                    matchFailed("\")\"");
+                  }
                 }
                 if (result4 !== null) {
                   result5 = parse__();
                   if (result5 !== null) {
-                    if (input.charCodeAt(pos) === 41) {
-                      result6 = ")";
-                      pos++;
-                    } else {
-                      result6 = null;
-                      if (reportFailures === 0) {
-                        matchFailed("\")\"");
-                      }
-                    }
-                    if (result6 !== null) {
-                      result7 = parse__();
-                      if (result7 !== null) {
-                        result0 = [result0, result1, result2, result3, result4, result5, result6, result7];
-                      } else {
-                        result0 = null;
-                        pos = pos1;
-                      }
-                    } else {
-                      result0 = null;
-                      pos = pos1;
-                    }
+                    result0 = [result0, result1, result2, result3, result4, result5];
                   } else {
                     result0 = null;
                     pos = pos1;
@@ -208,12 +196,9 @@ module.exports = (function(){
           pos = pos1;
         }
         if (result0 !== null) {
-          result0 = (function(offset, first, rest) {
-          var l = [first];
-          l.push.apply(l, rest);
-          //console.log('found list', l);
-          return l;
-        })(pos0, result0[3], result0[4]);
+          result0 = (function(offset, exprs) {
+          return exprs;
+        })(pos0, result0[2]);
         }
         if (result0 === null) {
           pos = pos0;
@@ -242,7 +227,6 @@ module.exports = (function(){
         }
         if (result0 !== null) {
           result0 = (function(offset, e) {
-          //console.log('found spaceExpr', e);
           return e;
         })(pos0, result0[1]);
         }

@@ -40,9 +40,7 @@ function evalAtom(atom, env) {
 }
 
 function evalScheem(expr, env) {
-  if (!env) {
-    env = {bindings: {}};
-  }
+  env = env || {bindings: {}};
 
   if (typeof expr === 'number') {
     return expr;
@@ -150,7 +148,7 @@ function evalScheem(expr, env) {
     return evalScheem(body, newEnv);
   case 'lambda':
     var argNames = [];
-    for (i = 1; i < len; i++) {
+    for (i = 1; i < len - 1; i++) {
       argNames.push(expr[i]);
     }
     body = expr[len - 1];

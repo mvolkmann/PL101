@@ -1,7 +1,7 @@
 'use strict';
 
 var assert = require('chai').assert;
-var evalScheem = require('../lib/try2');
+var evalScheem = require('../lib/evalScheem').evalScheem;
 
 test('try2', function () {
   var expr = ['let-one', 'x', 2, ['+', 'x', 1]];

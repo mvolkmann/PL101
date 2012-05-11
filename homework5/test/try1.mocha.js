@@ -1,7 +1,7 @@
 'use strict';
 
 var assert = require('chai').assert;
-var lookup = require('../lib/try1').lookup;
+var lookup = require('../lib/evalScheem').lookup;
 
 test('try1', function () {
   var env = {

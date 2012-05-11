@@ -12,7 +12,7 @@ var setBinding;
 var twoArgs;
 
 var evalCount = 0; // for debugging infinite recursion
-var evalLimit = 500; // for debugging infinite recursion
+var evalLimit = 50; // for debugging infinite recursion
 var inNode = typeof module !== 'undefined';
 var reservedWords = [
   'alert', 'begin', 'car', 'cat', 'cdr', 'cons',
@@ -23,7 +23,6 @@ var reservedWords = [
 // If running in Node.js ...
 if (inNode) {
   var parser = require('../scheemParser');
-  var util = require('util');
 }
 
 function addBinding(env, name, value) {
@@ -36,9 +35,6 @@ function addBinding(env, name, value) {
 
 function addBuiltins(env) {
   var bindings = env.bindings;
-  if (bindings['+']) {
-    return; // already done
-  }
 
   bindings['+'] = function () {
     var result = 0;
@@ -105,30 +101,31 @@ function addBuiltins(env) {
     }
   };
 
+  /*
   bindings.begin = function () {
-    //console.log('begin: arguments =', arguments);
     var len = arguments.length;
     var result = arguments[len - 1];
-    //console.log('begin: returning', result);
+    console.log('begin: returning', result);
     return result;
   };
+  */
 
   bindings.car = function () {
     oneArg('car', arguments);
     var list = arguments[0];
-    var result = list.length ? list[0] : null;
-    //console.log('car of', list, 'is', result);
-    return result;
+    return list.length ? list[0] : null;
   };
 
   bindings.cat = function () {
     twoArgs('cat', arguments);
     var result = [];
     var head = arguments[0];
+    console.log('cat: head =', head);
     var tail = arguments[1];
+    console.log('cat: tail =', tail);
     result.push.apply(result, head);
     result.push.apply(result, tail);
-    //console.log('cat of', head, 'and', tail, 'is', result);
+    console.log('cat: result =', result);
     return result;
   };
 
@@ -140,7 +137,6 @@ function addBuiltins(env) {
       result.push(list[i]);
     }
     //list.shift();
-    //console.log('cdr of', list, 'is', result);
     return result;
   };
 
@@ -153,27 +149,21 @@ function addBuiltins(env) {
   bindings.emptyp = function () {
     oneArg('length', arguments);
     var list = arguments[0];
-    var result = list.length === 0;
-    //console.log('empty of', list, 'is', result);
-    return result;
+    return list.length === 0;
   };
 
   bindings.exit = function () {
     process.exit();
   };
 
-  /*
   bindings.length = function () {
     oneArg('length', arguments);
     var list = arguments[0];
     return list.length;
   };
-  */
 
   bindings.list = function () {
-    var result = Array.prototype.slice.call(arguments, 0);
-    //console.log('list is', result);
-    return result;
+    return Array.prototype.slice.call(arguments, 0);
   };
 }
 
@@ -200,8 +190,9 @@ function evalAtom(atom, env) {
 }
 
 function evalScheem(expr, env) {
-  env = env || {bindings: {}};
-  addBuiltins(env);
+  if (!env) {
+    env = {bindings: {}};
+  }
 
   if (typeof expr === 'number') {
     return expr;
@@ -225,28 +216,24 @@ function evalScheem(expr, env) {
   var operand1 = expr[1];
   var operand2 = expr[2];
 
-  /*
   if (Array.isArray(operator)) {
     console.error('operator =', operator);
     throw new Error('operator cannot be an array');
   }
-  */
 
   switch (operator) {
 
-/*
   case 'begin':
     // It seems that this doesn't have to be a special form,
     // but keep this code until you're sure!
     var result;
     expr.shift();
     expr.forEach(function (e) {
-      console.log('\nbegin: evaluating', util.inspect(e, false, null));
+      console.log('\nbegin: evaluating', e);
       result = evalScheem(e, env);
-      console.log('begin: result of', e[0], 'is', result);
+      console.log('begin: result =', result);
     });
     return result;
-*/
 
   case 'define':
     // Must be a special form to avoid evaluating variable name.
@@ -264,9 +251,9 @@ function evalScheem(expr, env) {
     var index =
       condition === true || condition === '#t' ? 2 : 3;
     var selectedExpr = expr[index];
-    //console.log('if: selectedExpr =', selectedExpr);
-    var result = evalScheem(selectedExpr, env);
-    //console.log('if: result =', result);
+    console.log('if: selectedExpr =', selectedExpr);
+    result = evalScheem(selectedExpr, env);
+    console.log('if: result =', result);
     return result;
 
   case 'lambda':
@@ -298,39 +285,36 @@ function evalScheem(expr, env) {
     return 0;
 
   default:
-    // TODO: Why is this only needed for try10.mocha.js?
-    if (Array.isArray(operator) && operator[0] === 'alert') {
-      return evalScheem(operator, env);
-    }
-
     var fn = evalScheem(operator, env);
     var args = [];
     for (i = 1; i < len; i++) {
       var arg = expr[i];
       args.push(evalScheem(arg, env));
     }
-
-    if (operator !== 'alert') {
-      //console.log('evalScheem: operator =', operator, 'args =', args);
-      //console.log('  result =', result);
-    }
-
     //console.log('calling apply on', fn);
-    //console.log('calling', operator, 'on', args);
+    console.log('calling', operator, 'on', args);
+    result = fn.apply(null, args);
+    if (operator !== 'alert') {
+      console.log('\noperator =', operator);
+      console.log('  args =', args);
+      console.log('  result =', result);
+    }
     return fn.apply(null, args);
   }
 }
 
 function evalScheemString(s, env) {
-  //console.log('evalScheemString: s =', s);
+  env = env || {bindings: {}};
+  addBuiltins(env);
+  //console.log('s = "' + s + '"');
   var exprs = parser.parse(s);
-  //console.log('evalScheemString: exprs =', util.inspect(exprs, false, null));
   var result;
   exprs.forEach(function (expr) {
     //console.log('evaluating', expr);
     result = evalScheem(expr, env);
   });
 
+  //console.log('evalScheemString: result =', result);
   return Array.isArray(result) ? quote(result) : result;
 }
 
@@ -425,8 +409,7 @@ function twoArgs(operator, args) {
 }
 
 if (inNode) {
-  exports.addBinding = addBinding; // exported for testing
   exports.evalScheem = evalScheem;
   exports.evalScheemString = evalScheemString;
-  exports.lookup = lookup; // exported for testing
+  exports.lookup = lookup;
 }
