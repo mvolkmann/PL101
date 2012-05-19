@@ -9,27 +9,40 @@
     <script src="turtle.js"></script>
   </head>
   <body>
+
     <!--textarea id="input" style="width:700px; height:300px;">
 forward(100);
 left(45);
 forward(50);</textarea-->
     <!--textarea id="input" style="width:700px; height:300px;">
 repeat(18) {
-    right(20);
-    repeat(36) {
-        forward(20);
-        right(10);
-    }
+  right(20);
+  repeat(36) {
+    forward(20);
+    right(10);
+  }
 }</textarea-->
+
+    <!--textarea id="input" style="width:700px; height:300px;">
+define square(x) {
+  repeat(4) {
+    forward(x);
+    right(90);
+  }
+}
+square(100);
+square(20);
+</textarea-->
+
     <textarea id="input" style="width:700px; height:300px;">
 define spiral(size) {
-    if (size < 30) {
-        forward(size);
-        right(15);
-        var newsize;
-        newsize := size * 1.02;
-        spiral(newsize);
-    }
+  if (size < 30) {
+    forward(size);
+    right(15);
+    var newsize;
+    newsize := size * 1.02;
+    spiral(newsize);
+  }
 }
 spiral(5);
 </textarea>

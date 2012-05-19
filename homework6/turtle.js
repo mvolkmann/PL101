@@ -1,14 +1,6 @@
 'use strict';
 /*global Raphael: false */
 
-/**
- * Turtle constructor
- * @param x x-coordinate of the turtle
- * @param y y-coordinate of the turtle
- * @param w width of the turtle
- * @param h height of the turtle
- */
-//function Turtle(x, y, w, h) {
 function Turtle(id) {
   //this.paper = new Raphael(x, y, w, h);
   this.paper = new Raphael(id);

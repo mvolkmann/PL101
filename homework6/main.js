@@ -1,5 +1,5 @@
 'use strict';
-/*global addBinding: false, evalStatements: false, parser: false, Turtle: false */
+/*global addBinding: false, evalStmts: false, parser: false, Turtle: false */
 
 function log(msg) {
   $('#console').append('<p>' + msg + '</p>');
@@ -21,7 +21,7 @@ $(document).ready(function () {
     try {
       var parsed = parser.parse(program);
       try {
-        var result = evalStatements(parsed, env);
+        var result = evalStmts(parsed, env);
       } catch (e) {
         log('Eval Error: ' + e);
       }

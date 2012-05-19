@@ -3,8 +3,7 @@ var assert = require('chai').assert;
 var parse = require('../parser').parse;
 
 var tortoise = require('../tortoise');
-var evalExpr = tortoise.evalExpr;
-var evalStatement = tortoise.evalStatement;
+var evalStmt = tortoise.evalStmt;
 
 /*
  * This test doesn't work now that the grammar
@@ -47,8 +46,8 @@ test('try4', function () {
 test('try5', function () {
   var env = {bindings: {x: 2, y: 3}, outer: {}};
   assert.deepEqual(
-    evalExpr({tag: '+', left: 3, right: 5}, env), 8);
-  assert.deepEqual(evalExpr(
+    evalStmt({tag: '+', left: 3, right: 5}, env), 8);
+  assert.deepEqual(evalStmt(
     {
       tag: '+',
       left: {tag: 'ident', name: 'x'},
@@ -56,7 +55,7 @@ test('try5', function () {
     },
     env),
     7);
-  assert.deepEqual(evalExpr(
+  assert.deepEqual(evalStmt(
     {
       tag: '+',
       left: {tag: 'ident', name: 'x'},
@@ -67,8 +66,8 @@ test('try5', function () {
 });
 
 test('try6', function () {
-  assert.equal(evalStatement({tag: "ignore", body: 3}, {}), 3);
-  assert.deepEqual(evalStatement(
+  assert.equal(evalStmt({tag: "ignore", body: 3}, {}), 3);
+  assert.deepEqual(evalStmt(
     {
       tag: "repeat",
       expr: 5,

@@ -1,7 +1,7 @@
 'use strict';
 
-var evalStatement; // used before defined
-var evalStatements; // used before defined
+var evalStmt; // used before defined
+var evalStmts; // used before defined
 var lookup; // used before defined
 
 var reservedWords = [
@@ -18,72 +18,85 @@ function addBinding(env, name, value) {
     env.bindings = {};
     env.outer = {};
   }
+  console.log('adding binding for', name);
   env.bindings[name] = value;
 }
 
-var evalExpr = function (stmt, env) {
+function evalStmt(stmt, env) {
   if (typeof stmt === 'number') {
     return stmt; // numbers evaluate to themselves
   }
 
-  switch (stmt.tag) {
+  //console.log('evalStmt: tag =', stmt.tag);
+
+  switch (stmt.tag) { // statements always have tags
+  case 'ignore': // a single expression
+    return evalStmt(stmt.body, env);
   case '+':
-    return evalExpr(stmt.left, env) + evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) + evalStmt(stmt.right, env);
   case '-':
-    return evalExpr(stmt.left, env) - evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) - evalStmt(stmt.right, env);
   case '*':
-    return evalExpr(stmt.left, env) * evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) * evalStmt(stmt.right, env);
   case '/':
-    return evalExpr(stmt.left, env) / evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) / evalStmt(stmt.right, env);
   case '<':
-    return evalExpr(stmt.left, env) < evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) < evalStmt(stmt.right, env);
   case '<=':
-    return evalExpr(stmt.left, env) <= evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) <= evalStmt(stmt.right, env);
   case '>':
-    return evalExpr(stmt.left, env) > evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) > evalStmt(stmt.right, env);
   case '>=':
-    return evalExpr(stmt.left, env) >= evalExpr(stmt.right, env);
+    return evalStmt(stmt.left, env) >= evalStmt(stmt.right, env);
   case 'call':
     var fn = lookup(env, stmt.name);
-    return fn.apply(null, stmt.args);
+    var args = stmt.args.map(function (argObj) {
+      return evalStmt(argObj, env);
+    });
+    return fn.apply(null, args);
   case 'define': // name args body
+    console.log('defining function', stmt.name, 'with args', stmt.args);
     var newFunc = function () { // takes any number of arguments
       var newBindings;
       newBindings = {};
       for (var i = 0; i < stmt.args.length; i++) {
-        newBindings[stmt.args[i]] = arguments[i];
+        newBindings[stmt.args[i].name] = arguments[i];
       }
       var newEnv = {bindings: newBindings, outer: env};
-      return evalStatements(stmt.body, newEnv);
+      return evalStmts(stmt.body, newEnv);
     };
     addBinding(env, stmt.name, newFunc);
-    return null;
+    break;
   case 'ident':
     return lookup(env, stmt.name);
-  default:
-    throw new Error('invalid tag "' + stmt.tag + '" passed to evalExpr');
-  }
-};
-
-function evalStatement(stmt, env) {
-  switch (stmt.tag) { // statements always have tags
-  case 'ignore': // a single expression
-    return evalExpr(stmt.body, env);
+  case 'if':
+    if (evalStmt(stmt.expr, env)) {
+      evalStmts(stmt.body, env);
+    }
+    break;
   case 'repeat':
-    var times = evalExpr(stmt.expr);
+    var times = evalStmt(stmt.expr);
     var body = stmt.body;
     var result;
     for (var i = 0; i < times; i++) {
-      result = evalStatements(body, env);
+      result = evalStmts(body, env);
     }
     return result;
+  case 'var':
+    console.log('defined variable', stmt.name);
+    addBinding(env, stmt.name, undefined);
+    break;
+  default:
+    throw new Error('invalid tag "' + stmt.tag + '" passed to evalStmt');
   }
+
+  return null;
 }
 
-function evalStatements(seq, env) {
+function evalStmts(seq, env) {
   var result;
   for (var i = 0; i < seq.length; i++) {
-    result = evalStatement(seq[i], env);
+    result = evalStmt(seq[i], env);
   }
   return result;
 }
@@ -102,7 +115,6 @@ function lookup(env, v) {
 
 if (typeof exports !== 'undefined') {
   exports.addBinding = addBinding;
-  exports.evalExpr = evalExpr;
-  exports.evalStatement = evalStatement;
-  exports.evalStatements = evalStatements;
+  exports.evalStmt = evalStmt;
+  exports.evalStmts = evalStmts;
 }
