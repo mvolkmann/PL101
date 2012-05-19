@@ -21,44 +21,47 @@ function addBinding(env, name, value) {
   env.bindings[name] = value;
 }
 
-var evalExpr = function (expr, env) {
-  if (typeof expr === 'number') {
-    return expr; // numbers evaluate to themselves
+var evalExpr = function (stmt, env) {
+  if (typeof stmt === 'number') {
+    return stmt; // numbers evaluate to themselves
   }
 
-  switch (expr.tag) {
+  switch (stmt.tag) {
   case '+':
-    return evalExpr(expr.left, env) + evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) + evalExpr(stmt.right, env);
   case '-':
-    return evalExpr(expr.left, env) - evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) - evalExpr(stmt.right, env);
   case '*':
-    return evalExpr(expr.left, env) * evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) * evalExpr(stmt.right, env);
   case '/':
-    return evalExpr(expr.left, env) / evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) / evalExpr(stmt.right, env);
   case '<':
-    return evalExpr(expr.left, env) < evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) < evalExpr(stmt.right, env);
   case '<=':
-    return evalExpr(expr.left, env) <= evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) <= evalExpr(stmt.right, env);
   case '>':
-    return evalExpr(expr.left, env) > evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) > evalExpr(stmt.right, env);
   case '>=':
-    return evalExpr(expr.left, env) >= evalExpr(expr.right, env);
+    return evalExpr(stmt.left, env) >= evalExpr(stmt.right, env);
+  case 'call':
+    var fn = lookup(env, stmt.name);
+    return fn.apply(null, stmt.args);
   case 'define': // name args body
     var newFunc = function () { // takes any number of arguments
       var newBindings;
       newBindings = {};
-      for (var i = 0; i < expr.args.length; i++) {
-        newBindings[expr.args[i]] = arguments[i];
+      for (var i = 0; i < stmt.args.length; i++) {
+        newBindings[stmt.args[i]] = arguments[i];
       }
       var newEnv = {bindings: newBindings, outer: env};
-      return evalStatements(expr.body, newEnv);
+      return evalStatements(stmt.body, newEnv);
     };
-    addBinding(env, expr.name, newFunc);
+    addBinding(env, stmt.name, newFunc);
     return null;
   case 'ident':
-    return lookup(env, expr.name);
+    return lookup(env, stmt.name);
   default:
-    throw new Error('invalid tag "' + expr.tag + '" passed to evalExpr');
+    throw new Error('invalid tag "' + stmt.tag + '" passed to evalExpr');
   }
 };
 

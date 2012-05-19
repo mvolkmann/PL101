@@ -1,0 +1,128 @@
+start = ws stmts:statements {
+  return stmts;
+}
+
+additive =
+  left:multiplicative ws op:additiveOp ws right:additive {
+   return {tag:op, left:left, right:right};
+  }
+  /
+  multiplicative
+
+additiveOp = '+' / '-'
+
+argList = first:expression rest:commaExpression* {
+  return [first].concat(rest);
+}
+
+commaExpression = ',' ws expr:expression {
+  return expr;
+}
+
+comparative =
+  left:additive ws op:compOp ws right:comparative {
+    return {tag: op, left:left, right:right};
+  }
+  /
+  additive
+
+compOp = '<=' / '>=' / '!=' / '==' / '<' / '>'
+
+expression =
+  'EXPR' // a placeholder used only in tests
+  /
+  expr:comparative {
+    return expr;
+  }
+
+fraction = '.' chars:[0-9]* {
+  return '.' + chars.join('');
+}
+
+identifier = firstChar:validFirstChar chars:validChar* {
+  return firstChar + chars.join('');
+}
+
+multiplicative =
+  left:primary ws op:multOp ws right:multiplicative {
+    return {tag:op, left:left, right:right};
+  }
+  /
+  primary
+
+multOp = '*' / '/'
+
+number = sign:'-'? chars:[0-9]+ frac:fraction? {
+  return parseFloat(sign + chars.join('') + frac);
+}
+
+primary =
+  number
+  /
+  v:identifier '(' ws ')' {
+    return {tag: 'call', name: v, args: []};
+  }
+  /
+  v:identifier '(' ws args:argList ws ')' {
+    return {tag: 'call', name: v, args: args};
+  }
+  /
+  v:identifier {
+    return {tag: 'ident', name: v};
+  }
+  /
+  '(' ws expr:expression ws ')' {
+    return expr;
+  }
+
+statement =
+  stmtVar / stmtIf / stmtDefine / stmtRepeat / stmtAssign
+  /
+  expr:expression ws ';' ws {
+    return {tag: 'ignore', body: expr};
+  }
+
+statements = statement*
+
+stmtAssign = v:identifier ws ':=' ws expr:expression ws ';' ws {
+  return {tag: ':=', left: v, right: expr};
+}
+
+stmtDefine = 
+  // no-arg function
+  'define ' ws id:identifier ws '(' ws ')'
+  ws '{' ws body:statements ws '}' ws {
+    return {tag: 'define', name: id, args: [], body: body};
+  }
+  /
+  // function with one or more arguments
+  'define ' ws id:identifier ws '(' ws args:argList ws ')'
+  ws '{' ws body:statements ws '}' ws {
+    return {tag: 'define', name: id, args: args, body: body};
+  }
+
+stmtIf =
+  'if' ws '(' ws cond:expression ws ')'
+  ws '{' ws body:statements ws '}' ws {
+  return {tag: 'if', expr: cond, body: body};
+}
+
+stmtRepeat =
+  'repeat' ws '(' ws count:expression ws ')'
+  ws '{' ws body:statements ws '}' ws {
+  return {tag: 'repeat', expr: count, body: body};
+}
+
+stmtVar = 'var ' ws id:identifier ws ';' ws {
+  return {tag: 'var', name: id};
+}
+
+validChar = [0-9a-zA-Z_]
+
+validFirstChar = [a-zA-Z_]
+
+variable = id:identifier {
+  return {tag: 'ident', name: id};
+}
+
+ws = [ \n\t]*;

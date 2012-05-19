@@ -14,9 +14,7 @@ function Turtle(id) {
   this.paper = new Raphael(id);
   this.size = 64;
 
-  // Start turtle so it is fully visible in the upper-left corner.
-  //this.originX = w / 2;
-  //this.originY = h / 2;
+  // Start turtle in center of canvas.
   var elem = $('#' + id);
   this.originX = elem.width() / 2;
   this.originY = elem.height() / 2;
@@ -30,7 +28,7 @@ Turtle.prototype.clear = function () {
   this.width = 4;
   this.angle = 90; // facing upward
   this.pen = true;
-  this.turtleImg = undefined;
+  this.turtleImg = null;
   this.x = this.originX;
   this.y = this.originY;
 
@@ -109,16 +107,16 @@ Turtle.prototype.setWidth = function (width) {
 };
 
 Turtle.prototype.updateTurtle = function () {
-  if (this.turtleImg === undefined) {
-    this.turtleimg = this.paper.image(
+  if (!this.turtleImg) {
+    this.turtleImg = this.paper.image(
       "http://nathansuniversity.com/gfx/turtle2.png",
       0, 0, this.size, this.size);
   }
   var halfSize = this.size / 2;
-  this.turtleimg.attr({
+  this.turtleImg.attr({
     x: this.x - halfSize,
     y: this.y - halfSize,
     transform: "r" + (-this.angle)
   });
-  this.turtleimg.toFront();
+  this.turtleImg.toFront();
 };
