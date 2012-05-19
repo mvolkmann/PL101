@@ -97,7 +97,7 @@ function lookup(env, v) {
   return lookup(env.outer, v);
 }
 
-if (exports) {
+if (typeof exports !== 'undefined') {
   exports.addBinding = addBinding;
   exports.evalExpr = evalExpr;
   exports.evalStatement = evalStatement;
