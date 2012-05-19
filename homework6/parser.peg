@@ -1,0 +1,51 @@
+start = statement / expression
+//start = statements / expression
+
+number_frac = '.' chars:[0-9]* {
+  return '.' + chars.join('');
+}
+
+number = sign:'-'? chars:[0-9]+ frac:number_frac? {
+  return parseFloat(sign + chars.join('') + frac);
+}
+
+validFirstChar = [a-zA-Z_]
+
+validChar = [0-9a-zA-Z_]
+
+identifier = firstChar:validFirstChar chars:validChar* {
+  return firstChar + chars.join('');
+}
+
+variable = id:identifier {
+  return {tag: 'ident', name: id};
+}
+
+// 'EXPR' is a temporary placeholder until the grammar is more defined.
+expression = 'EXPR' / variable / primary
+
+primary = number / '(' ws expr:expression ws ')' {
+  return expr;
+}
+
+ws = [ \n\t]*;
+
+assignment = v:identifier ws ':=' ws expr:expression ws ';' {
+  return {tag: ':=', left: v, right: expr};
+}
+
+if = 'if' ws '(' cond:expression ')' ws '{' ws body:statements ws '}' {
+  return {tag: 'if', expr: cond, body: body};
+}
+
+repeat = 'repeat' ws '(' count:expression ')' ws '{' ws body:statements ws '}' {
+  return {tag: 'repeat', expr: count, body: body};
+}
+
+var = 'var ' ws id:identifier ws ';' {
+  return {tag: 'var', name: id};
+}
+
+statements = statement*
+
+statement = assignment / if / repeat / var

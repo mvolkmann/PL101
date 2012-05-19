@@ -1,0 +1,5 @@
+#!/bin/sh
+clear
+pegjs parser.peg
+pegjs -e parser parser.peg browserParser.js
+mocha -u tdd -R list
