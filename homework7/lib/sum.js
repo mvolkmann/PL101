@@ -50,7 +50,7 @@ function trampoline(thk) {
     //console.log('trampoline: tag =', tag);
     if (tag === 'value') {
       return thk.val;
-    } else if (tag === "thunk") {
+    } else if (tag === 'thunk') {
       thk = thk.func.apply(null, thk.args);
     } else {
       throw new Error('invalid thunk tag "' + tag + '"');
