@@ -69,6 +69,11 @@ function evalStmt(stmt, env) {
     break;
   case 'ident':
     return lookup(env, stmt.name);
+  case ':=':
+    var name = stmt.left;
+    var rhs = evalStmt(stmt.right, env);
+    addBinding(env, name, rhs);
+    return rhs;
   case 'if':
     if (evalStmt(stmt.expr, env)) {
       evalStmts(stmt.body, env);
