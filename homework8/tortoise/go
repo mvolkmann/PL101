@@ -1,0 +1,4 @@
+#!/bin/sh
+clear
+pegjs grammar.peg parser.js
+pegjs -e parser grammar.peg browserParser.js
