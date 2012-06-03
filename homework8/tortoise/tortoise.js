@@ -1,8 +1,13 @@
 'use strict';
 
-var evalStmt; // used before defined
-var evalStmts; // used before defined
-var lookup; // used before defined
+// Functions that are used before they are defined:
+var evalStmt;
+var evalStmts;
+var lookup;
+var step;
+var stepStart;
+var thunk;
+var thunkValue;
 
 var reservedWords = [
   'alert', 'begin', 'car', 'cat', 'cdr', 'cons',
@@ -22,8 +27,15 @@ function addBinding(env, name, value) {
   env.bindings[name] = value;
 }
 
-//function evalStmt(stmt, env) {
-function evalStmt(stmt, env, cont) {
+function evalFull(expr, env) {
+  var state = stepStart(expr, env);
+  while (!state.done) {
+    step(state);
+  }
+  return state.data;
+}
+
+function evalStmt(stmt, env, cont, xcont) {
   if (!cont) {
     throw new Error('call to evalStmt missing cont argument');
   }
@@ -38,84 +50,73 @@ function evalStmt(stmt, env, cont) {
 
   switch (stmt.tag) { // statements always have tags
   case 'ignore': // a single expression
-    //return evalStmt(stmt.body, env);
     evalStmt(stmt.body, env, function (value) {
       cont(value);
-    });
+    }, xcont);
     break;
   case '+':
-    //return evalStmt(stmt.left, env) + evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue + rightValue);
-      });
+      }, xcont);
     });
     break;
   case '-':
-    //return evalStmt(stmt.left, env) - evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue - rightValue);
-      });
+      }, xcont);
     });
     break;
   case '*':
-    //return evalStmt(stmt.left, env) * evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue * rightValue);
-      });
+      }, xcont);
     });
     break;
   case '/':
-    //return evalStmt(stmt.left, env) / evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue / rightValue);
-      });
+      }, xcont);
     });
     break;
   case '<':
-    //return evalStmt(stmt.left, env) < evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue < rightValue);
-      });
+      }, xcont);
     });
     break;
   case '<=':
-    //return evalStmt(stmt.left, env) <= evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue <= rightValue);
-      });
+      }, xcont);
     });
     break;
   case '>':
-    //return evalStmt(stmt.left, env) > evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue > rightValue);
-      });
+      }, xcont);
     });
     break;
   case '>=':
-    //return evalStmt(stmt.left, env) >= evalStmt(stmt.right, env);
     evalStmt(stmt.left, env, function (leftValue) {
       evalStmt(stmt.right, env, function (rightValue) {
         cont(leftValue >= rightValue);
-      });
+      }, xcont);
     });
     break;
   case 'call':
     var fn = lookup(env, stmt.name);
-    //var args = stmt.args.map(function (argObj) {
     var args = [];
     stmt.args.forEach(function (argObj) {
-      //return evalStmt(argObj, env);
       evalStmt(argObj, env, function (value) {
         args.push(value);
-      });
+      }, xcont);
     });
     //return fn.apply(null, args);
     cont(fn.apply(null, args));
@@ -141,11 +142,10 @@ function evalStmt(stmt, env, cont) {
     break;
   case ':=':
     var name = stmt.left;
-    //var rhs = evalStmt(stmt.right, env);
     evalStmt(stmt.right, env, function (rhs) {
       addBinding(env, name, rhs);
       cont(rhs);
-    });
+    }, xcont);
     //return rhs;
     break;
   /*
@@ -175,14 +175,18 @@ function evalStmt(stmt, env, cont) {
   return null;
 }
 
-//function evalStmts(seq, env) {
-function evalStmts(seq, env, cont) {
-  var result;
-  for (var i = 0; i < seq.length; i++) {
-    //result = evalStmt(seq[i], env);
-    evalStmt(seq[i], env, cont);
-  }
-  //return result;
+function evalStmts(stmts, env, cont, xcont) {
+  console.log('tortoise evalStmts: stmts =', stmts);
+  var len = stmts.length;
+  var i = 0;
+
+  var newCont = function (fn) {
+    return i < len ?
+      thunk(evalStmt, stmts[i++], env, newCont, xcont) :
+      thunk(cont, fn);
+  };
+
+  return newCont(undefined);
 }
 
 function lookup(env, v) {
@@ -195,6 +199,60 @@ function lookup(env, v) {
   }
 
   return lookup(env.outer, v);
+}
+
+function step(state) {
+  var data = state.data;
+  var tag = data.tag;
+  if (tag === 'value') {
+    state.data = data.val;
+    state.done = true;
+  } else if (tag === 'thunk') {
+    state.data = data.func.apply(null, data.args);
+  } else {
+    throw new Error('invalid thunk tag "' + tag + '"');
+  }
+}
+
+/**
+ * Returns a state object representing the result of a given expression
+ * which is typically the first expression in a sequence.
+ */
+function stepStart(expr, env) {
+  return {
+    data: evalStmt(expr, env, thunkValue),
+    done: false
+  };
+}
+
+function thunk(f) {
+  var args = Array.prototype.slice.call(arguments);
+  args.shift();
+  return {tag: 'thunk', func: f, args: args};
+}
+
+function thunkValue(x) {
+  return {tag: 'value', val: x};
+}
+
+function trampoline(thk) {
+  while (true) {
+    console.log('tortoise evalThunk: thk =', thk);
+    var tag = thk.tag;
+    console.log('tortoise evalThunk: tag =', tag);
+    if (tag === 'value') {
+      return thk.val;
+    }
+    if (tag === 'thunk') {
+      var fn = thk.func;
+      console.log('tortoise evalThunk: fn.name =', fn.name);
+      console.log('tortoise evalThunk: thk.args =', thk.args);
+      fn.apply(null, thk.args);
+      // TODO: Need to assign new value to thk!
+    } else {
+      throw new Error('invalid thunk tag "' + tag + '"');
+    }
+  }
 }
 
 if (typeof exports !== 'undefined') {

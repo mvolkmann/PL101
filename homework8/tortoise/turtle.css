@@ -1,0 +1,27 @@
+* {
+  font-family: sans-serif;
+}
+
+body {
+  background-color: linen;
+}
+
+#console {
+  background-color: #fee;
+  border: solid black 1px;
+  height: 75px;
+  width: 600px;
+}
+
+#canvas {
+  background-color: #eee;
+  height: 600px;
+  width: 600px;
+}
+
+#input {
+  font-size: 12pt;
+  height: 300px;
+  width: 600px;
+}
+
