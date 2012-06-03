@@ -2,15 +2,16 @@
 /*global
   addBinding: false,
   evalStmts: false,
-  trampoline: false,
   parser: false,
-  step: false,
-  stepStart: false,
+  thunkValue: false,
   Turtle: false */
 
 var env = {};
 var state;
 var turtle;
+
+var stepStart; // used before defined
+var trampoline; // used before defined
 
 function cont() {
 }
@@ -19,52 +20,80 @@ function log(msg) {
   $('#console').append('<p>' + msg + '</p>');
 }
 
-function parseCode(cb) {
+function parseCode() {
   var program = $('#input').val();
   $('#console').html('');
-
   turtle.clear();
 
   try {
-    var parsed = parser.parse(program);
-    try {
-      console.log('main.js: parsed =', parsed);
-      var thk = evalStmts(parsed, env,
-        function (result) {
-          alert('Success!');
-        },
-        function (msg) {
-          alert('Error: ' + msg);
-        });
-      console.log('main.js: thk =', thk);
-      cb(thk);
-    } catch (e) {
-      log('Eval Error: ' + e);
-      throw e;
-    }
-  } catch (e2) {
-    log('Parse Error: ' + e2);
-    throw e2;
+    var stmts = parser.parse(program);
+    stepStart(stmts, env, function (err) {
+      log('Eval Error: ' + err);
+    });
+    console.log('main parseCode: state.data =', state.data);
+  } catch (e) {
+    log('Parse Error: ' + e);
+    throw e;
   }
 }
 
 function run() {
-  parseCode(trampoline);
+  parseCode();
+  trampoline(state);
+}
+
+function step(state) {
+  console.log('tortoise step: state.data =', state.data);
+  var data = state.data;
+  var tag = data.tag;
+  console.log('tortoise step: tag =', tag);
+  if (tag === 'value') {
+    state.data = data.val;
+    state.done = true;
+  } else if (tag === 'thunk') {
+    console.log('tortoise step: applying function', data.func.name);
+    state.data = data.func.apply(null, data.args);
+  } else {
+    throw new Error('invalid thunk tag "' + tag + '"');
+  }
+
+  if (state.data === null) {
+    throw new Error('no data property in state!');
+  }
+}
+
+/**
+ * Returns a state object representing the result of a given expression
+ * which is typically the first expression in a sequence.
+ */
+function stepStart(stmts, env) {
+  console.log('tortoise stepStart: stmts =', stmts);
+  var thk = evalStmts(stmts, env, thunkValue);
+  console.log('tortoise stepStart: thk =', thk);
+  state = {data: thk, done: false};
+  console.log('tortoise stepStart: state.data =', state.data);
 }
 
 function takeStep() {
-  if (state) {
-    if (!state.done) {
-      step(state);
-    }
-  } else {
-    parseCode(function (thk) {
-      state = stepStart(thk, env);
-      if (state.done) {
-        $('#step').attr('disabled', true);
-      }
-    });
+  if (!state) {
+    parseCode();
   }
+
+  if (!state.done) {
+    state = step(state);
+  }
+
+  if (state.done) {
+    $('#step').attr('disabled', true);
+  }
+}
+
+function trampoline(state) {
+  console.log('tortoise trampoline: entered');
+  while (!state.done) {
+    step(state);
+  }
+  return state.data;
 }
 
 $(document).ready(function () {

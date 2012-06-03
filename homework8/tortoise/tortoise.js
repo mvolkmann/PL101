@@ -1,13 +1,10 @@
 'use strict';
 
 // Functions that are used before they are defined:
-var evalStmt;
 var evalStmts;
 var lookup;
-var step;
-var stepStart;
+var operands;
 var thunk;
-var thunkValue;
 
 var reservedWords = [
   'alert', 'begin', 'car', 'cat', 'cdr', 'cons',
@@ -27,99 +24,82 @@ function addBinding(env, name, value) {
   env.bindings[name] = value;
 }
 
-function evalFull(expr, env) {
-  var state = stepStart(expr, env);
-  while (!state.done) {
-    step(state);
+function evalExpr(expr, env, cont) {
+  if (!cont) {
+    throw new Error('call to evalExpr missing cont argument');
   }
-  return state.data;
+
+  if (typeof expr === 'number') {
+    return thunk(cont, expr); // numbers evaluate to themselves
+  }
+
+  console.log('tortoise evalExpr: expr.tag =', expr.tag);
+  switch (expr.tag) { // statements always have tags
+  case '+':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs + rhs;
+    });
+  case '-':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs - rhs;
+    });
+  case '*':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs * rhs;
+    });
+  case '/':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs / rhs;
+    });
+  case '<':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs < rhs;
+    });
+  case '<=':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs <= rhs;
+    });
+  case '>':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs > rhs;
+    });
+  case '>=':
+    return operands(expr, env, cont, function (lhs, rhs) {
+      return lhs >= rhs;
+    });
+  case 'call':
+    var fn = lookup(env, expr.name);
+    var args = [];
+    var i = 0;
+    // Return a function that can be called repeatedly to
+    // evaluate each function argument and then
+    // evaluate the function itself using those arguments.
+    var evalArgs = function (arg) {
+      args.push(arg);
+      // If all the arguments have been evaluated ...
+      return i === expr.args.length ?
+        fn.apply(this, args) :
+        thunk(evalExpr, expr.args[i++], env, evalArgs);
+    };
+    return evalArgs(cont);
+  case 'ident':
+    return thunk(cont, lookup(env, expr.name));
+  }
+
+  return null; // happens when tag is 'ignore'
 }
 
-function evalStmt(stmt, env, cont, xcont) {
-  if (!cont) {
-    throw new Error('call to evalStmt missing cont argument');
-  }
-
-  if (typeof stmt === 'number') {
-    //return stmt; // numbers evaluate to themselves
-    cont(stmt); // numbers evaluate to themselves
-    return;
-  }
-
-  //console.log('evalStmt: tag =', stmt.tag);
-
-  switch (stmt.tag) { // statements always have tags
+function evalStmt(stmt, env, cont) {
+  switch (stmt.tag) {
   case 'ignore': // a single expression
-    evalStmt(stmt.body, env, function (value) {
-      cont(value);
-    }, xcont);
+    evalExpr(stmt.body, env, cont);
     break;
-  case '+':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue + rightValue);
-      }, xcont);
+  case ':=':
+    var name = stmt.left;
+    evalExpr(stmt.right, env, function (rhs) {
+      addBinding(env, name, rhs);
+      return thunk(cont, rhs);
     });
-    break;
-  case '-':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue - rightValue);
-      }, xcont);
-    });
-    break;
-  case '*':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue * rightValue);
-      }, xcont);
-    });
-    break;
-  case '/':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue / rightValue);
-      }, xcont);
-    });
-    break;
-  case '<':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue < rightValue);
-      }, xcont);
-    });
-    break;
-  case '<=':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue <= rightValue);
-      }, xcont);
-    });
-    break;
-  case '>':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue > rightValue);
-      }, xcont);
-    });
-    break;
-  case '>=':
-    evalStmt(stmt.left, env, function (leftValue) {
-      evalStmt(stmt.right, env, function (rightValue) {
-        cont(leftValue >= rightValue);
-      }, xcont);
-    });
-    break;
-  case 'call':
-    var fn = lookup(env, stmt.name);
-    var args = [];
-    stmt.args.forEach(function (argObj) {
-      evalStmt(argObj, env, function (value) {
-        args.push(value);
-      }, xcont);
-    });
-    //return fn.apply(null, args);
-    cont(fn.apply(null, args));
     break;
   /*
   case 'define': // name args body
@@ -136,26 +116,14 @@ function evalStmt(stmt, env, cont, xcont) {
     addBinding(env, stmt.name, newFunc);
     break;
   */
-  case 'ident':
-    //return lookup(env, stmt.name);
-    cont(lookup(env, stmt.name));
-    break;
-  case ':=':
-    var name = stmt.left;
-    evalStmt(stmt.right, env, function (rhs) {
-      addBinding(env, name, rhs);
-      cont(rhs);
-    }, xcont);
-    //return rhs;
-    break;
   /*
   case 'if':
-    if (evalStmt(stmt.expr, env)) {
+    if (evalExpr(stmt.expr, env)) {
       evalStmts(stmt.body, env);
     }
     break;
   case 'repeat':
-    var times = evalStmt(stmt.expr);
+    var times = evalExpr(stmt.expr);
     var body = stmt.body;
     var result;
     for (var i = 0; i < times; i++) {
@@ -165,25 +133,26 @@ function evalStmt(stmt, env, cont, xcont) {
   */
   case 'var':
     console.log('defined variable', stmt.name);
-    addBinding(env, stmt.name, undefined);
-    cont();
-    break;
+    // TODO: Does your parser support initialization values?
+    return evalExpr(stmt.initial, env, function (val) {
+      addBinding(env, stmt.name, val);
+      return thunk(cont, 0); // TODO: Why using zero?
+    });
   default:
     throw new Error('invalid tag "' + stmt.tag + '" passed to evalStmt');
   }
-
-  return null;
 }
 
-function evalStmts(stmts, env, cont, xcont) {
-  console.log('tortoise evalStmts: stmts =', stmts);
+function evalStmts(stmts, env, cont) {
+  console.log('tortoise evalStmts: entered');
   var len = stmts.length;
   var i = 0;
 
-  var newCont = function (fn) {
+  var newCont = function (value) {
+    console.log('tortoise newCont: i =', i);
     return i < len ?
-      thunk(evalStmt, stmts[i++], env, newCont, xcont) :
-      thunk(cont, fn);
+      thunk(evalStmt, stmts[i++], env, newCont) :
+      thunk(cont, value);
   };
 
   return newCont(undefined);
@@ -201,31 +170,26 @@ function lookup(env, v) {
   return lookup(env.outer, v);
 }
 
-function step(state) {
-  var data = state.data;
-  var tag = data.tag;
-  if (tag === 'value') {
-    state.data = data.val;
-    state.done = true;
-  } else if (tag === 'thunk') {
-    state.data = data.func.apply(null, data.args);
-  } else {
-    throw new Error('invalid thunk tag "' + tag + '"');
-  }
+function operands(expr, env, cont, cb) {
+  return thunk(
+    evalExpr, expr.left, env,
+    function (lhs) {
+      return thunk(
+        evalExpr, expr.right, env,
+        function (rhs) {
+          if (typeof lhs !== 'number' || typeof rhs !== 'number') {
+            throw 'arguments to ' + expr.tag + ' must be numbers';
+          }
+          return thunk(cont, cb(lhs, rhs));
+        });
+    });
 }
 
 /**
- * Returns a state object representing the result of a given expression
- * which is typically the first expression in a sequence.
+ * Returns a thunk built from a given function and any number of arguments.
  */
-function stepStart(expr, env) {
-  return {
-    data: evalStmt(expr, env, thunkValue),
-    done: false
-  };
-}
-
 function thunk(f) {
+  console.log('tortoise thunk: entered');
   var args = Array.prototype.slice.call(arguments);
   args.shift();
   return {tag: 'thunk', func: f, args: args};
@@ -233,30 +197,4 @@ function thunk(f) {
 
 function thunkValue(x) {
   return {tag: 'value', val: x};
-}
-
-function trampoline(thk) {
-  while (true) {
-    console.log('tortoise evalThunk: thk =', thk);
-    var tag = thk.tag;
-    console.log('tortoise evalThunk: tag =', tag);
-    if (tag === 'value') {
-      return thk.val;
-    }
-    if (tag === 'thunk') {
-      var fn = thk.func;
-      console.log('tortoise evalThunk: fn.name =', fn.name);
-      console.log('tortoise evalThunk: thk.args =', thk.args);
-      fn.apply(null, thk.args);
-      // TODO: Need to assign new value to thk!
-    } else {
-      throw new Error('invalid thunk tag "' + tag + '"');
-    }
-  }
-}
-
-if (typeof exports !== 'undefined') {
-  exports.addBinding = addBinding;
-  exports.evalStmt = evalStmt;
-  exports.evalStmts = evalStmts;
 }
