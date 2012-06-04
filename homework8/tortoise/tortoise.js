@@ -68,7 +68,9 @@ function evalExpr(expr, env, cont) {
       return lhs >= rhs;
     });
   case 'call':
+    console.log('tortoise evalExpr: got a call');
     var fn = lookup(env, expr.name);
+    console.log('tortoise evalExpr: expr.name =', expr.name);
     var args = [];
     var i = 0;
     // Return a function that can be called repeatedly to
@@ -77,13 +79,20 @@ function evalExpr(expr, env, cont) {
     var evalArgs = function (arg) {
       args.push(arg);
       // If all the arguments have been evaluated ...
-      return i === expr.args.length ?
-        fn.apply(this, args) :
-        thunk(evalExpr, expr.args[i++], env, evalArgs);
+      if (i === expr.args.length) {
+        console.log('tortoise evalExpr: calling fn with', args);
+        return fn.apply(this, args);
+      } else {
+        var nextArg = expr.args[i++];
+        console.log('tortoise evalExpr: nextArg =', nextArg);
+        return thunk(evalExpr, nextArg, env, evalArgs);
+      }
     };
     return evalArgs(cont);
   case 'ident':
     return thunk(cont, lookup(env, expr.name));
+  default:
+    console.log('tortoise evalExpr: unhandled tag', expr.tag);
   }
 
   return null; // happens when tag is 'ignore'

@@ -27,9 +27,7 @@ function parseCode() {
 
   try {
     var stmts = parser.parse(program);
-    stepStart(stmts, env, function (err) {
-      log('Eval Error: ' + err);
-    });
+    stepStart(stmts, env);
     console.log('main parseCode: state.data =', state.data);
   } catch (e) {
     log('Parse Error: ' + e);
@@ -69,9 +67,7 @@ function step(state) {
 function stepStart(stmts, env) {
   console.log('tortoise stepStart: stmts =', stmts);
   var thk = evalStmts(stmts, env, thunkValue);
-  console.log('tortoise stepStart: thk =', thk);
   state = {data: thk, done: false};
-  console.log('tortoise stepStart: state.data =', state.data);
 }
 
 function takeStep() {
