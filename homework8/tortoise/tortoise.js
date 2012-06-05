@@ -30,7 +30,7 @@ function evalExpr(expr, env, cont) {
   }
 
   if (typeof expr === 'number') {
-    return thunk(cont, expr); // numbers evaluate to themselves
+    return cont(expr); // numbers evaluate to themselves
   }
 
   //console.log('tortoise evalExpr: expr.tag =', expr.tag);
@@ -87,6 +87,9 @@ function evalExpr(expr, env, cont) {
     };
     return evalArgs(cont);
     */
+    // TODO: This version only handles function calls with one argument!
+    // See http://nathansuniversity.com/vanilla/discussion/comment/1677#Comment_1677
+    // for hints on how to improve this.
     return evalExpr(expr.args[0], env, function (arg) {
       return cont(fn.apply(this, [arg]));
     });

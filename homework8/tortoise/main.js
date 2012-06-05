@@ -13,7 +13,15 @@ var turtle;
 var stepStart; // used before defined
 var trampoline; // used before defined
 
+function clear() {
+  $('#console').html('');
+  turtle.clear();
+  state = null;
+  $('#step').attr('disabled', false);
+}
+
 function cont() {
+  // TODO: Implement this!
 }
 
 function log(msg) {
@@ -22,8 +30,7 @@ function log(msg) {
 
 function parseCode() {
   var program = $('#input').val();
-  $('#console').html('');
-  turtle.clear();
+  clear();
 
   try {
     var stmts = parser.parse(program);
@@ -42,11 +49,22 @@ function run() {
 function step(state) {
   var data = state.data;
   var tag = data.tag;
+  //console.log('main step: tag =', tag);
   if (tag === 'value') {
     state.data = data.val;
     state.done = true;
   } else if (tag === 'thunk') {
-    state.data = data.func.apply(null, data.args);
+    var arg = data.args[0];
+    if (arg) {
+      var fnName = arg.body.name;
+      //console.log('main step: fnName =', fnName);
+      state.data = data.func.apply(null, data.args);
+      if (state.data.func === thunkValue) {
+        state.done = true;
+      }
+    } else {
+      state.done = true;
+    }
   } else {
     throw new Error('invalid thunk tag "' + tag + '"');
   }
@@ -76,6 +94,7 @@ function takeStep() {
 
   if (state.done) {
     $('#step').attr('disabled', true);
+    state = null;
   }
 }
 
@@ -97,4 +116,5 @@ $(document).ready(function () {
   $('#run').click(run);
   $('#step').click(takeStep);
   $('#continue').click(cont);
+  $('#clear').click(clear);
 });
