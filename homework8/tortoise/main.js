@@ -28,7 +28,6 @@ function parseCode() {
   try {
     var stmts = parser.parse(program);
     stepStart(stmts, env);
-    console.log('main parseCode: state.data =', state.data);
   } catch (e) {
     log('Parse Error: ' + e);
     throw e;
@@ -41,15 +40,12 @@ function run() {
 }
 
 function step(state) {
-  console.log('tortoise step: state.data =', state.data);
   var data = state.data;
   var tag = data.tag;
-  console.log('tortoise step: tag =', tag);
   if (tag === 'value') {
     state.data = data.val;
     state.done = true;
   } else if (tag === 'thunk') {
-    console.log('tortoise step: applying function', data.func.name);
     state.data = data.func.apply(null, data.args);
   } else {
     throw new Error('invalid thunk tag "' + tag + '"');
@@ -65,7 +61,6 @@ function step(state) {
  * which is typically the first expression in a sequence.
  */
 function stepStart(stmts, env) {
-  console.log('tortoise stepStart: stmts =', stmts);
   var thk = evalStmts(stmts, env, thunkValue);
   state = {data: thk, done: false};
 }
@@ -76,7 +71,7 @@ function takeStep() {
   }
 
   if (!state.done) {
-    state = step(state);
+    step(state);
   }
 
   if (state.done) {
@@ -85,7 +80,6 @@ function takeStep() {
 }
 
 function trampoline(state) {
-  console.log('tortoise trampoline: entered');
   while (!state.done) {
     step(state);
   }

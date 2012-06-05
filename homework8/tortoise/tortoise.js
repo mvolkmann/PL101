@@ -33,7 +33,7 @@ function evalExpr(expr, env, cont) {
     return thunk(cont, expr); // numbers evaluate to themselves
   }
 
-  console.log('tortoise evalExpr: expr.tag =', expr.tag);
+  //console.log('tortoise evalExpr: expr.tag =', expr.tag);
   switch (expr.tag) { // statements always have tags
   case '+':
     return operands(expr, env, cont, function (lhs, rhs) {
@@ -68,9 +68,8 @@ function evalExpr(expr, env, cont) {
       return lhs >= rhs;
     });
   case 'call':
-    console.log('tortoise evalExpr: got a call');
     var fn = lookup(env, expr.name);
-    console.log('tortoise evalExpr: expr.name =', expr.name);
+    /*
     var args = [];
     var i = 0;
     // Return a function that can be called repeatedly to
@@ -80,19 +79,22 @@ function evalExpr(expr, env, cont) {
       args.push(arg);
       // If all the arguments have been evaluated ...
       if (i === expr.args.length) {
-        console.log('tortoise evalExpr: calling fn with', args);
         return fn.apply(this, args);
       } else {
         var nextArg = expr.args[i++];
-        console.log('tortoise evalExpr: nextArg =', nextArg);
         return thunk(evalExpr, nextArg, env, evalArgs);
       }
     };
     return evalArgs(cont);
+    */
+    return evalExpr(expr.args[0], env, function (arg) {
+      return cont(fn.apply(this, [arg]));
+    });
+    
   case 'ident':
     return thunk(cont, lookup(env, expr.name));
   default:
-    console.log('tortoise evalExpr: unhandled tag', expr.tag);
+    throw new Error('tortoise evalExpr: unhandled tag', expr.tag);
   }
 
   return null; // happens when tag is 'ignore'
@@ -101,15 +103,13 @@ function evalExpr(expr, env, cont) {
 function evalStmt(stmt, env, cont) {
   switch (stmt.tag) {
   case 'ignore': // a single expression
-    evalExpr(stmt.body, env, cont);
-    break;
+    return evalExpr(stmt.body, env, cont);
   case ':=':
     var name = stmt.left;
-    evalExpr(stmt.right, env, function (rhs) {
+    return evalExpr(stmt.right, env, function (rhs) {
       addBinding(env, name, rhs);
       return thunk(cont, rhs);
     });
-    break;
   /*
   case 'define': // name args body
     console.log('defining function', stmt.name, 'with args', stmt.args);
@@ -141,7 +141,6 @@ function evalStmt(stmt, env, cont) {
     return result;
   */
   case 'var':
-    console.log('defined variable', stmt.name);
     // TODO: Does your parser support initialization values?
     return evalExpr(stmt.initial, env, function (val) {
       addBinding(env, stmt.name, val);
@@ -153,12 +152,10 @@ function evalStmt(stmt, env, cont) {
 }
 
 function evalStmts(stmts, env, cont) {
-  console.log('tortoise evalStmts: entered');
   var len = stmts.length;
   var i = 0;
 
   var newCont = function (value) {
-    console.log('tortoise newCont: i =', i);
     return i < len ?
       thunk(evalStmt, stmts[i++], env, newCont) :
       thunk(cont, value);
@@ -198,7 +195,6 @@ function operands(expr, env, cont, cb) {
  * Returns a thunk built from a given function and any number of arguments.
  */
 function thunk(f) {
-  console.log('tortoise thunk: entered');
   var args = Array.prototype.slice.call(arguments);
   args.shift();
   return {tag: 'thunk', func: f, args: args};
