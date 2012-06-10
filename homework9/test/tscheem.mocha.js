@@ -104,6 +104,18 @@ test('typeFunction', function () {
   assert.deepEqual(typeExprTester(context2), expected);
 });
 
+function wrapExceptions(fn) {
+  return function () {
+    var args = Array.prototype.slice.call(arguments);
+    try {
+      return fn.apply(null, args);
+    } catch (e) {
+      console.log('wrapExceptions:', e);
+      return undefined;
+    }
+  };
+}
+
 test('typeIf', function () {
   var context = {
     bindings: {
@@ -111,18 +123,6 @@ test('typeIf', function () {
       '<': arrow(base('num'), arrow(base('num'), base('bool')))
     }
   };
-
-  function wrapExceptions(fn) {
-    return function () {
-      var args = Array.prototype.slice.call(arguments);
-      try {
-        return fn.apply(null, args);
-      } catch (e) {
-        console.log('wrapExceptions:', e);
-        return undefined;
-      }
-    };
-  }
 
   typeExpr = wrapExceptions(typeExpr);
 
@@ -134,4 +134,32 @@ test('typeIf', function () {
   assert.deepEqual(
     typeExpr(['if', [['<', 1], 2], [['+', 2], 3], 5], context),
     base('num'));
+});
+
+test('typeLambdaOne', function () {
+  var context = {
+    bindings: {
+      'x': base('string'),
+      '+': arrow(base('num'), arrow(base('num'), base('num'))),
+      '<': arrow(base('num'), arrow(base('num'), base('bool')))
+    }
+  };
+
+  typeExpr = wrapExceptions(typeExpr);
+
+  assert.deepEqual(
+    typeExpr(['lambda-one', 'x', base('num'), 5], {}),
+    arrow(base('num'), base('num')));
+
+  assert.deepEqual(
+    typeExpr(['lambda-one', 'x', base('num'), 5], context),
+    arrow(base('num'), base('num')));
+
+  assert.deepEqual(
+    typeExpr(['lambda-one', 'x', base('num'), 'x'], {}),
+    arrow(base('num'), base('num')));
+
+  assert.deepEqual(
+    typeExpr(['lambda-one', 'x', arrow(base('num'), base('num')), ['x', 3]], { }),
+    arrow(arrow(base('num'), base('num')), base('num')));
 });

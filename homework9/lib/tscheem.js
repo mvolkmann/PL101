@@ -22,7 +22,8 @@ function base(name) {
 function lookup(env, name) {
   var bindings = env.bindings;
   if (bindings === undefined) {
-    throw new Error('environment is missing bindings property');
+    //throw new Error('environment is missing bindings property');
+    return undefined;
   }
 
   var value = bindings[name];
@@ -62,6 +63,15 @@ function sameType(a, b, env) {
   return typeExpr(a, env) === typeExpr(b, env);
 }
 
+function createEnv(env, name, value) {
+  var binding = {};
+  binding[name] = value;
+  return {
+    bindings: binding,
+    outer: env
+  };
+}
+
 function typeExprIf(expr, env) {
   var cond = expr[1];
   //console.log('typeExprIf: cond =', cond);
@@ -84,10 +94,22 @@ function typeExprIf(expr, env) {
   return thenType.name === elseType.name ? thenType : undefined;
 }
 
+function typeExprLambdaOne(expr, env) {
+  var argName = expr[1];
+  var argType = expr[2];
+  var newEnv = createEnv(env, argName, argType);
+  var returnType = typeExpr(expr[3], newEnv);
+  return arrow(argType, returnType);
+}
+
 function typeExprArray(expr, env) {
   var fnName = expr[0];
+  //console.log('typeExprArray: fnName =', fnName);
   if (fnName === 'if') {
     return typeExprIf(expr, env);
+  }
+  if (fnName === 'lambda-one') {
+    return typeExprLambdaOne(expr, env);
   }
 
   var arg = expr[1];
