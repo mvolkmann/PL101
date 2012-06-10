@@ -5,7 +5,9 @@ var assert = require('chai').assert;
 var hare = require('../lib/hare');
 var compileEnvironment = hare.compileEnvironment;
 var compileExpr = hare.compileExpr;
+var compileStatements = hare.compileStatements;
 var app = hare.app;
+var ign = hare.ign;
 var op = hare.op;
 var ref = hare.ref;
 
@@ -59,4 +61,27 @@ test('compileCall', function () {
     eval(compileExpr(app('add', [2, 3]))), 5);
   assert.equal(
     eval(compileExpr(app('f', [app('f', [3])]))), 31);
+});
+
+test('compileStatement', function () {
+  var x = 5;
+  var prg1 = [ign(op('+', ref('x'), 1))];
+
+  assert.equal(
+    eval(compileStatements([ign(op('+', ref('x'), 1))], false) +
+      ' _res'), 6);
+
+  assert.equal(
+    eval(compileStatements([ign(3), ign(op('+', ref('x'), 1))], false) +
+      ' _res'), 6);
+
+  assert.equal(
+    eval(compileStatements([ign(op('+', ref('x'), 1)), ign(3)], false) +
+      ' _res'), 3);
+
+  assert.equal(
+    eval('(function() {' +
+      compileStatements([ign(op('+', ref('x'), 1)), ign(3)], true) +
+      '})()'),
+    3);
 });

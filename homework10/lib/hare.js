@@ -1,6 +1,7 @@
 'use strict';
 
 var compileExpr; // used before defined
+var compileStatements; // used before defined
 
 function compileCall(expr) {
   //console.log('compileCall: expr =', expr);
@@ -30,6 +31,43 @@ function compileEnvironment(env) {
     var value = arr[1];
     code += 'var ' + name + ' = ' + value + ';\n';
   });
+  return code;
+}
+
+function compileStatement(stmt) {
+  switch (stmt.tag) {
+  case ':=':
+    return '_res = (' + stmt.left + ' = ' + compileExpr(stmt.right) + ');\n';
+  case 'define':
+    return '_res = 0;\n' +
+      'var ' + stmt.name + ' = function () {\n' +
+      compileStatements(stmt.body) +
+      '};\n';
+  //case 'if':
+  //  return '';
+  case 'ignore': // a single expression
+    return '_res = (' + compileExpr(stmt.body) + ');\n';
+  //case 'repeat':
+  //  return '';
+  case 'var': // evaluates to 0
+    return '_res = 0;\nvar ' + stmt.name + ';\n';
+  default:
+    throw new Error('Unknown tag ' + stmt.tag);
+  }
+}
+
+function compileStatements(stmts, isFnBody) {
+  var code = 'var _res;\n';
+
+  stmts.forEach(function (stmt) {
+    code += compileStatement(stmt);
+  });
+
+  if (isFnBody) {
+    code += 'return _res;\n';
+  }
+
+  //console.log('compileStatements: code =', code);
   return code;
 }
 
@@ -66,6 +104,10 @@ function app(f, args) {
   return {tag: 'call', name: f, args: args};
 }
 
+function ign(e) {
+  return { tag: 'ignore', body: e };
+}
+
 function op(t, l, r) {
   return {tag: t, left: l, right: r};
 }
@@ -77,5 +119,7 @@ function ref(n) {
 exports.app = app;
 exports.compileEnvironment = compileEnvironment;
 exports.compileExpr = compileExpr;
+exports.compileStatements = compileStatements;
+exports.ign = ign;
 exports.op = op;
 exports.ref = ref;
