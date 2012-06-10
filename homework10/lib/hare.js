@@ -1,6 +1,7 @@
 'use strict';
 
 var compileExpr; // used before defined
+var compileStatement; // used before defined
 var compileStatements; // used before defined
 
 function compileCall(expr) {
@@ -34,43 +35,6 @@ function compileEnvironment(env) {
   return code;
 }
 
-function compileStatement(stmt) {
-  switch (stmt.tag) {
-  case ':=':
-    return '_res = (' + stmt.left + ' = ' + compileExpr(stmt.right) + ');\n';
-  case 'define':
-    return '_res = 0;\n' +
-      'var ' + stmt.name + ' = function () {\n' +
-      compileStatements(stmt.body) +
-      '};\n';
-  //case 'if':
-  //  return '';
-  case 'ignore': // a single expression
-    return '_res = (' + compileExpr(stmt.body) + ');\n';
-  //case 'repeat':
-  //  return '';
-  case 'var': // evaluates to 0
-    return '_res = 0;\nvar ' + stmt.name + ';\n';
-  default:
-    throw new Error('Unknown tag ' + stmt.tag);
-  }
-}
-
-function compileStatements(stmts, isFnBody) {
-  var code = 'var _res;\n';
-
-  stmts.forEach(function (stmt) {
-    code += compileStatement(stmt);
-  });
-
-  if (isFnBody) {
-    code += 'return _res;\n';
-  }
-
-  //console.log('compileStatements: code =', code);
-  return code;
-}
-
 function compileExpr(expr) {
   if (typeof expr === 'number') {
     return expr.toString();
@@ -100,6 +64,50 @@ function compileExpr(expr) {
   }
 }
 
+function compileRepeat(stmt) {
+  var count = compileExpr(stmt.expr);
+  var fn = 'function () {\n' + compileStatements(stmt.body, true) + '}\n';
+  var code = 'var _res = repeat(' + count + ', ' + fn + ');\n';
+  return code;
+}
+
+function compileStatement(stmt) {
+  switch (stmt.tag) {
+  case ':=':
+    return '_res = (' + stmt.left + ' = ' + compileExpr(stmt.right) + ');\n';
+  case 'define':
+    return '_res = 0;\n' +
+      'var ' + stmt.name + ' = function () {\n' +
+      compileStatements(stmt.body) +
+      '};\n';
+  //case 'if':
+  //  return '';
+  case 'ignore': // a single expression
+    return '_res = (' + compileExpr(stmt.body) + ');\n';
+  case 'repeat':
+    return compileRepeat(stmt);
+  case 'var': // evaluates to 0
+    return '_res = 0;\nvar ' + stmt.name + ';\n';
+  default:
+    throw new Error('Unknown tag ' + stmt.tag);
+  }
+}
+
+function compileStatements(stmts, isFnBody) {
+  var code = 'var _res;\n';
+
+  stmts.forEach(function (stmt) {
+    code += compileStatement(stmt);
+  });
+
+  if (isFnBody) {
+    code += 'return _res;\n';
+  }
+
+  //console.log('compileStatements: code =', code);
+  return code;
+}
+
 function app(f, args) {
   return {tag: 'call', name: f, args: args};
 }
@@ -116,10 +124,26 @@ function ref(n) {
   return {tag: 'ident', name: n};
 }
 
+function rep(n, e) {
+  return { tag: 'repeat', expr: n, body: e };
+}
+
+function repeat(num, fn) {
+  var i;
+  var res;
+  for (i = 0; i < num; i++) {
+    res = fn();
+  }
+  return res;
+}
+
 exports.app = app;
 exports.compileEnvironment = compileEnvironment;
 exports.compileExpr = compileExpr;
+exports.compileStatement = compileStatement;
 exports.compileStatements = compileStatements;
 exports.ign = ign;
 exports.op = op;
 exports.ref = ref;
+exports.rep = rep;
+exports.repeat = repeat;
